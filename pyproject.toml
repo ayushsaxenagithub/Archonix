@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "archonix"
-version = "0.1.0"
+version = "0.1.1"
 description = "Portable AI software engineering skill system: from product understanding to production-ready software."
 readme = "README.md"
 license = "MIT"
@@ -13,19 +13,32 @@ requires-python = ">=3.11"
 # referencing is imported directly (schema registry), so it is declared explicitly even
 # though jsonschema also depends on it.
 dependencies = ["jsonschema>=4.18", "referencing>=0.28.4"]
-keywords = ["agent-skills", "code-review", "security", "testing", "release-readiness"]
+keywords = [
+    "agent-skills", "ai-coding-assistant", "claude-code", "codex", "cursor", "code-review",
+    "security", "testing", "release-readiness", "static-analysis",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
+    "Environment :: Console",
     "Intended Audience :: Developers",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Security",
+    "Typing :: Typed",
 ]
 
 [project.urls]
+Homepage = "https://github.com/ayushsaxenagithub/Archonix"
 Repository = "https://github.com/ayushsaxenagithub/Archonix"
+Documentation = "https://github.com/ayushsaxenagithub/Archonix/tree/main/docs"
+Issues = "https://github.com/ayushsaxenagithub/Archonix/issues"
+Changelog = "https://github.com/ayushsaxenagithub/Archonix/blob/main/CHANGELOG.md"
 
 [project.scripts]
 archonix = "archonix.cli:main"
@@ -48,7 +61,7 @@ packages = ["src/archonix"]
 "skills/archonix" = "archonix/_bundled/skills/archonix"
 
 [tool.hatch.build.targets.sdist]
-include = ["src", "skills", "tests", "docs", "examples", "adapters", "scripts", "README.md", "LICENSE", "AGENTS.md", "CONTRIBUTING.md", "SECURITY.md"]
+include = ["src", "skills", "tests", "docs", "examples", "adapters", "scripts", "README.md", "CHANGELOG.md", "LICENSE", "AGENTS.md", "CONTRIBUTING.md", "SECURITY.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

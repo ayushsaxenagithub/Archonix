@@ -35,9 +35,9 @@ the dependency change that caused it and gets an issue otherwise.
 - Version in `pyproject.toml` and `archonix/__init__.py` must match (tested).
 - Release from a green `main` commit; regenerate `examples/reports/` if output formats
   changed; update `docs/capabilities.md` and `docs/roadmap.md`.
-- Tag `vX.Y.Z`, create a GitHub release with the built wheel and sdist and honest notes
-  (verified vs unverified). Publishing to PyPI is not set up; doing so would need a
-  separate decision and trusted publishing.
+- Follow [releasing.md](releasing.md): publishing a GitHub release triggers
+  `release.yml`, which uploads to PyPI through trusted publishing after approval on the
+  `pypi` environment. Release notes state what was verified and what was not.
 
 ## Repository settings (recommended; not changed by code in this repository)
 
@@ -50,3 +50,6 @@ These are GitHub settings only an owner can change. Current state was read on 20
 | Secret scanning + push protection | enabled | keep |
 | Dependabot security updates | disabled | enable (version updates are configured in `.github/dependabot.yml`) |
 | Discussions | enabled | keep; linked from the issue chooser |
+| Merge methods | merge, squash and rebase allowed | allow squash only, to match the policy above |
+| Delete head branches on merge | off | on |
+| `pypi` / `testpypi` environments | none | create with a required reviewer (see releasing.md) |

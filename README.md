@@ -10,33 +10,39 @@ that produces the repeatable evidence those workflows rely on.
 
 > Status: **v0.1, alpha.** Archonix does not make software secure or production-ready on
 > its own. It helps an assistant (and you) work from evidence and report honestly about
-> what was and was not verified. See [docs/capabilities.md](docs/capabilities.md) for
+> what was and was not verified. See [docs/capabilities.md](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/capabilities.md) for
 > exactly what is implemented and tested.
 
 ## What is in the box
 
 | Part | Path | What it is |
 |---|---|---|
-| Skill entry point | [`skills/archonix/SKILL.md`](skills/archonix/SKILL.md) | Workflow selection and operating rules (Agent Skills format) |
-| Workflow references | [`skills/archonix/references/`](skills/archonix/references/) | Discovery, implementation, bugs, review, testing, security, dead code, performance, release, architecture — loaded only when needed |
-| Templates | [`skills/archonix/templates/`](skills/archonix/templates/) | Documents Archonix generates in *your* project (spec, journeys, ADRs, findings, …) |
-| Schemas | [`skills/archonix/schemas/`](skills/archonix/schemas/) | Versioned JSON Schemas (v0.1) for requirements, config, inventory, executions, findings, reports, readiness, performance |
-| CLI | [`src/archonix/`](src/archonix/) | Deterministic helpers: inventory, check planning/execution, report validation/rendering, readiness, diagrams, installer |
-| Adapters | [`adapters/`](adapters/) | Thin install/usage notes for Claude Code, OpenAI Codex and Cursor |
-| Examples | [`examples/`](examples/) | Synthetic repositories and example reports (clearly labelled) |
+| Skill entry point | [`skills/archonix/SKILL.md`](https://github.com/ayushsaxenagithub/Archonix/blob/main/skills/archonix/SKILL.md) | Workflow selection and operating rules (Agent Skills format) |
+| Workflow references | [`skills/archonix/references/`](https://github.com/ayushsaxenagithub/Archonix/tree/main/skills/archonix/references) | Discovery, implementation, bugs, review, testing, security, dead code, performance, release, architecture — loaded only when needed |
+| Templates | [`skills/archonix/templates/`](https://github.com/ayushsaxenagithub/Archonix/tree/main/skills/archonix/templates) | Documents Archonix generates in *your* project (spec, journeys, ADRs, findings, …) |
+| Schemas | [`skills/archonix/schemas/`](https://github.com/ayushsaxenagithub/Archonix/tree/main/skills/archonix/schemas) | Versioned JSON Schemas (v0.1) for requirements, config, inventory, executions, findings, reports, readiness, performance |
+| CLI | [`src/archonix/`](https://github.com/ayushsaxenagithub/Archonix/tree/main/src/archonix) | Deterministic helpers: inventory, check planning/execution, report validation/rendering, readiness, diagrams, installer |
+| Adapters | [`adapters/`](https://github.com/ayushsaxenagithub/Archonix/tree/main/adapters) | Thin install/usage notes for Claude Code, OpenAI Codex and Cursor |
+| Examples | [`examples/`](https://github.com/ayushsaxenagithub/Archonix/tree/main/examples) | Synthetic repositories and example reports (clearly labelled) |
 
 The skill content is the same for every assistant; adapters only document where each
 assistant looks for skills.
 
 ## Quickstart
 
-Requires Python 3.11+.
+Requires Python 3.11+. Install the CLI in its own environment:
 
 ```bash
+pipx install archonix              # from PyPI, once a release is published there
+# or from source (always works):
 git clone https://github.com/ayushsaxenagithub/Archonix.git
 cd Archonix
-pip install .                      # or: uv tool install .   /   pipx install .
+pipx install .                     # or: uv tool install .   /   pip install .
+```
 
+The commands below use the synthetic projects in a clone of the repository:
+
+```bash
 archonix --version
 archonix inventory examples/python-service          # static: reads files, runs nothing
 archonix check plan examples/python-service --mode audit
@@ -60,7 +66,7 @@ archonix install --assistant codex --scope project --project-dir . --apply   # .
 ```
 
 Without the CLI you can copy `skills/archonix/` into the assistant's skills directory by
-hand; see [docs/installation.md](docs/installation.md).
+hand; see [docs/installation.md](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/installation.md).
 
 Then ask your assistant things like *"Use Archonix to understand this repository"*,
 *"Discover requirements for a team invoicing feature"*, *"Fix this bug with Archonix"* or
@@ -87,23 +93,25 @@ flowchart LR
 - **Safe defaults.** Discovery mode executes nothing and uses no network. Running external
   tools, repository code (tests) or network-backed scanners each needs its own permission.
   Repository config can only *restrict* permissions. See
-  [docs/trust-model.md](docs/trust-model.md).
+  [docs/trust-model.md](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/trust-model.md).
 - **Honest results.** Tool findings are kept separate from tool failures; missing evidence
   makes a readiness verdict `incomplete`, never `ready`; a clean scan is never described as
   proof of security.
 
 ## Documentation
 
-- [Installation](docs/installation.md) · [CLI reference](docs/cli.md) ·
-  [Configuration](docs/configuration.md) · [Workflows](docs/workflows.md)
-- [Permission and trust model](docs/trust-model.md) · [Tool adapters](docs/tool-adapters.md)
-- [Assistant compatibility](docs/assistants.md) · [Capabilities and status](docs/capabilities.md)
-- [Architecture](docs/architecture.md) · [Decision records](docs/architecture-decisions/)
-- [Troubleshooting](docs/troubleshooting.md) · [Limitations and roadmap](docs/roadmap.md)
-- [Continuous integration](docs/ci.md) · [Maintainer policy](docs/maintainers.md) ·
-  [Good first issues](docs/good-first-issues.md) · [Audit 2026-10](docs/audits/2026-10-community-readiness.md)
-- [Contributing](CONTRIBUTING.md) · [Security policy](SECURITY.md) · [Agent instructions](AGENTS.md)
+- [Installation](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/installation.md) · [CLI reference](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/cli.md) ·
+  [Configuration](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/configuration.md) · [Workflows](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/workflows.md)
+- [Permission and trust model](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/trust-model.md) · [Tool adapters](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/tool-adapters.md)
+- [Assistant compatibility](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/assistants.md) · [Capabilities and status](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/capabilities.md)
+- [Architecture](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/architecture.md) · [Decision records](https://github.com/ayushsaxenagithub/Archonix/tree/main/docs/architecture-decisions)
+- [Troubleshooting](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/troubleshooting.md) · [Limitations and roadmap](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/roadmap.md)
+- [Changelog](https://github.com/ayushsaxenagithub/Archonix/blob/main/CHANGELOG.md) ·
+  [Releasing](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/releasing.md) ·
+  [Continuous integration](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/ci.md) · [Maintainer policy](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/maintainers.md) ·
+  [Good first issues](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/good-first-issues.md) · [Audit 2026-10](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/audits/2026-10-community-readiness.md)
+- [Contributing](https://github.com/ayushsaxenagithub/Archonix/blob/main/CONTRIBUTING.md) · [Security policy](https://github.com/ayushsaxenagithub/Archonix/blob/main/SECURITY.md) · [Agent instructions](https://github.com/ayushsaxenagithub/Archonix/blob/main/AGENTS.md)
 
 ## License
 
-[MIT](LICENSE).
+[MIT](https://github.com/ayushsaxenagithub/Archonix/blob/main/LICENSE).
