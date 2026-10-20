@@ -134,3 +134,23 @@ def test_generated_k6_script_runs(tmp_path: Path) -> None:
         assert result.returncode == 0, result.stderr[-2000:]
     finally:
         httpd.shutdown()
+
+
+@needs("gitleaks")
+def test_real_gitleaks_finds_synthetic_token_without_copying_it(tmp_path: Path) -> None:
+    import random
+    import string
+
+    rng = random.Random(7)  # synthetic, deterministic, never a real credential
+    token = "ghp_" + "".join(rng.choice(string.ascii_letters + string.digits) for _ in range(36))
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "settings.py").write_text(f'GITHUB_TOKEN = "{token}"\n')
+    report = run_report(repo, tmp_path / "out", "gitleaks")
+    ex = report["executions"][0]
+    assert (ex["status"], ex["outcome"], ex["exit_code"]) == ("completed", "findings", 1)
+    assert report["findings"][0]["location"]["path"] == "settings.py"
+    assert all(token not in p.read_text() for p in (tmp_path / "out").rglob("*") if p.is_file())
+    (repo / "settings.py").write_text("GITHUB_TOKEN = None\n")
+    clean = run_report(repo, tmp_path / "out2", "gitleaks")
+    assert clean["executions"][0]["outcome"] == "clean"

@@ -52,6 +52,11 @@ def build_workflow_report(
             s = e.get(stream)
             if s and s["truncated"] and s["bytes_total"] > settings.max_output_bytes:
                 limitations.append(f"{e['check_id']}: {stream} exceeded the capture limit")
+    if settings.repo_excludes:
+        limitations.append(
+            "repository config excluded paths from inventory and scanners: "
+            + ", ".join(settings.repo_excludes)
+        )
     if settings.ignored:
         limitations += [f"ignored setting: {x}" for x in settings.ignored]
     if repository.get("dirty") is None and repository["vcs"] == "git":

@@ -129,3 +129,33 @@ def test_version_flag(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit):
         main(["--version"])
     assert capsys.readouterr().out.strip() == f"archonix {archonix.__version__}"
+
+
+_LINK = re.compile(r"(?<!!)\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
+
+
+def _markdown_files() -> list[Path]:
+    skip = (".venv", "node_modules", "dist", ".git")
+    return sorted(
+        p
+        for p in REPO_ROOT.rglob("*.md")
+        if not any(part in skip for part in p.relative_to(REPO_ROOT).parts)
+    )
+
+
+def test_internal_markdown_links_resolve() -> None:
+    """Relative links in every Markdown file must point at an existing file or directory.
+
+    External (scheme) links are not fetched; checking them would make CI depend on the
+    network. Fenced code blocks are ignored.
+    """
+    broken = []
+    for path in _markdown_files():
+        text = re.sub(r"```.*?```", "", path.read_text(encoding="utf-8"), flags=re.DOTALL)
+        for target in _LINK.findall(text):
+            if re.match(r"^[a-z][a-z0-9+.-]*:", target) or target.startswith("#"):
+                continue
+            file_part = target.split("#", 1)[0]
+            if file_part and not (path.parent / file_part).exists():
+                broken.append(f"{path.relative_to(REPO_ROOT)} -> {target}")
+    assert not broken, "broken internal links:\n" + "\n".join(broken)

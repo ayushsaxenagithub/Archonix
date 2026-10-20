@@ -24,7 +24,12 @@ The repository is controlled by whoever wrote it, so in `archonix.toml`:
 
 - `permissions.* = false` is honoured; `permissions.* = true` is **ignored**;
 - `execution.env_passthrough` is **ignored** (it could pass your credentials to tools);
-- `checks.<id>.extra_args` is **ignored** (it could make a tool load arbitrary code).
+- `checks.<id>.extra_args` is **ignored** (it could make a tool load arbitrary code);
+- `redaction.extra_patterns` is **ignored** (a crafted regular expression could stall
+  redaction); `redaction.sensitive_env_names` is still honoured.
+
+Exclusions added by repository config are honoured (they also apply to scanners) and are
+listed in every report's `limitations`, so a repository cannot silently hide files.
 
 Ignored settings are listed by `config show`, `check plan` and in reports under
 `policy.ignored_settings` and `limitations`. User config and `--config` are trusted and
@@ -57,7 +62,7 @@ destructive = false
 
 [redaction]
 sensitive_env_names = ["INTERNAL_SERVICE_KEY"]   # values of these env vars are masked
-extra_patterns = ["ACME-[0-9]{6}"]               # Python regular expressions
+extra_patterns = ["ACME-[0-9]{6}"]               # Python regexes; trusted layers only
 
 [checks.bandit]
 enabled = true

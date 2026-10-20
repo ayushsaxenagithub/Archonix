@@ -48,7 +48,7 @@ CREDENTIAL_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     (
         "assignment",
         re.compile(
-            r"(?i)(\b[\w.-]*(?:password|passwd|secret|token|api[_-]?key|access[_-]?key)[\w.-]*"
+            r"(?i)(\b[\w.-]*(?:password|passwd|secret|token|api[_-]?key|access[_-]?key)[\w.-]*[\"']?"
             r"\s*[:=]\s*(?:\\?[\"'])?)(?!\[REDACTED\])([^\s\"',;\\]{6,})"
         ),
     ),

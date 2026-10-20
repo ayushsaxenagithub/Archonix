@@ -3,6 +3,7 @@
 Last updated: {{date}}
 
 ## Journey: <name>
+
 - **Actor:** <role>
 - **Goal:**
 - **Preconditions:**

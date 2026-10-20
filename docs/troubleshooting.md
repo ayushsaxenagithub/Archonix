@@ -37,3 +37,17 @@ with a `[tool.ruff]` section; a parent config's `exclude` can apply. Add a `[too
 section to the nested project.
 
 **YAML OpenAPI files.** `pip install pyyaml`, or convert the document to JSON.
+
+**Installer reports a symlink conflict.** The target directory, a file or directory inside
+it, or (for `--scope project`) a directory between the project root and the target is a
+symlink. Archonix refuses to write or delete through symlinks. Replace the link with a real
+directory, or install with `--scope user` if you manage `~/.claude` through dotfiles
+(a symlinked `~/.claude` itself is supported).
+
+**A tool is "not installed" although it runs in your shell.** Archonix ignores empty and
+relative `PATH` entries (such as `.` or `node_modules/.bin`) so a repository cannot
+substitute its own executables. Put the tool's directory on `PATH` as an absolute path.
+
+**Report says an artifact "was not redacted".** Retained artifacts that are binary, larger
+than 20 MB, unreadable or symlinks are kept as written by the tool and named in the
+report's limitations. Treat them as sensitive or delete them.

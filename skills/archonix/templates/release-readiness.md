@@ -8,6 +8,7 @@ Verdict from `archonix readiness assess`: <ready / not-ready / incomplete>
 |---|---|---|
 
 ## Manual checklist
+
 - [ ] Migrations reviewed; rollback plan exists
 - [ ] Configuration and secrets set per environment
 - [ ] Monitoring, logs and alerts in place

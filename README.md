@@ -100,6 +100,8 @@ flowchart LR
 - [Assistant compatibility](docs/assistants.md) · [Capabilities and status](docs/capabilities.md)
 - [Architecture](docs/architecture.md) · [Decision records](docs/architecture-decisions/)
 - [Troubleshooting](docs/troubleshooting.md) · [Limitations and roadmap](docs/roadmap.md)
+- [Continuous integration](docs/ci.md) · [Maintainer policy](docs/maintainers.md) ·
+  [Good first issues](docs/good-first-issues.md) · [Audit 2026-10](docs/audits/2026-10-community-readiness.md)
 - [Contributing](CONTRIBUTING.md) · [Security policy](SECURITY.md) · [Agent instructions](AGENTS.md)
 
 ## License

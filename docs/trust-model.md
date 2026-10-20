@@ -23,11 +23,12 @@ Modes only choose defaults (see [configuration.md](configuration.md)).
 |---|---|---|
 | A check runs only if every requirement it declares is permitted; otherwise it is recorded as `blocked` with the reason | `checks.plan_checks`, `policy.blocking_reasons` | `test_checks_e2e.py`, `test_policy.py` |
 | Discovery mode launches no tools; `inventory` reads git metadata from files and runs `git status` only with `--allow-tools` | `gitinfo.py` | `test_inventory.py`, `test_integration_real.py` |
-| Repository config cannot grant permissions, pass env vars or add tool arguments | `config._apply_layer` | `test_config.py` |
+| Repository config cannot grant permissions, pass env vars, add tool arguments or supply redaction regexes; exclusions it adds are listed in reports | `config._apply_layer`, `report.py` | `test_config.py`, `test_hardening.py` |
+| Empty and relative `PATH` entries are dropped and executables resolved to absolute paths, so a repository cannot shadow a tool with `./ruff` | `runner.safe_path` | `test_hardening.py` |
 | Subprocesses: argv list, no shell, explicit cwd, minimal env, timeout kills the process group, bounded capture | `runner.py` | `test_runner.py` |
 | Reports are written only inside the chosen output location; no overwrite without `--overwrite`; symlink escapes refused | `policy.WriteGuard` | `test_policy.py`, `test_checks_e2e.py` |
 | `docs init` writes into the repository only with `--apply --allow-source-writes`, never overwriting | `docsinit.py` | `test_docs_and_architecture.py` |
-| `install`/`uninstall` are dry runs by default and touch only unmodified manifest-listed files | `install.py` | `test_install.py` |
+| `install`/`uninstall` are dry runs by default, touch only unmodified manifest-listed files, refuse manifest entries that are absolute or contain `..`, and refuse symlinked targets or path components (project scope: anywhere below the project root) | `install.py` | `test_install.py`, `test_hardening.py` |
 | `perf smoke` needs `--allow-network`, issues only GET/HEAD, caps requests/concurrency, needs `--authorized-host` for non-loopback, does not follow redirects or use env proxies | `perf.py` | `test_perf.py` |
 | Output excerpts, findings, argv and retained artifacts are redacted before being written | `redact.py`, `checks.py` | `test_redact.py`, `test_integration_real.py` |
 
