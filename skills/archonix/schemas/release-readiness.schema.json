@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:archonix:schema:release-readiness:0.1",
+  "title": "Archonix release readiness assessment",
+  "description": "Policy-driven assessment. Missing required evidence yields `incomplete`, never `ready`. A `ready` verdict means the configured policy's rules passed; it is not a guarantee of security or production fitness.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "schema_version", "generated_at", "policy", "verdict", "rules", "inputs", "limitations"],
+  "properties": {
+    "kind": {"const": "release-readiness"},
+    "schema_version": {"const": "0.1"},
+    "example": {"type": "boolean"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "policy": {
+      "type": "object",
+      "required": ["name", "source"],
+      "properties": {"name": {"type": "string"}, "source": {"type": "string"}}
+    },
+    "verdict": {"enum": ["ready", "not-ready", "incomplete"]},
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "description", "result", "detail"],
+        "properties": {
+          "id": {"type": "string"},
+          "description": {"type": "string"},
+          "result": {"enum": ["pass", "fail", "unknown"]},
+          "detail": {"type": "string"},
+          "evidence": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reports", "ledger"],
+      "properties": {
+        "reports": {"type": "array", "items": {"type": "string"}},
+        "ledger": {"type": ["string", "null"]}
+      }
+    },
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  }
+}

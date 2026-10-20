@@ -1,0 +1,23 @@
+# Example repository configuration (place at the repository root as archonix.toml).
+# Repository config is restrict-only: it can turn permissions off, never on, and cannot
+# add tool arguments or pass environment variables.
+schema_version = "0.1"
+
+[inventory]
+exclude = ["fixtures", "docs/generated"]
+max_files = 50000
+
+[execution]
+timeout_seconds = 600
+
+[permissions]
+network = false
+
+[redaction]
+sensitive_env_names = ["INTERNAL_SERVICE_KEY"]
+
+[checks.vulture]
+enabled = false
+
+[checks.bandit]
+timeout_seconds = 120

@@ -1,0 +1,7 @@
+services:
+  api:
+    build: services/api
+  web:
+    build: apps/web
+  db:
+    image: postgres:16

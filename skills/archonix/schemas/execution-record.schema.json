@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:archonix:schema:execution-record:0.1",
+  "title": "Archonix execution record",
+  "description": "What was run (or deliberately not run), where, for how long, and how the result was interpreted. `status` describes the process; `outcome` describes the interpretation. Unknown counts stay null.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "check_id", "argv", "cwd", "status", "outcome", "requires"],
+  "$defs": {
+    "stream": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["excerpt", "bytes_total", "truncated"],
+      "properties": {
+        "excerpt": {"type": ["string", "null"]},
+        "bytes_total": {"type": "integer", "minimum": 0},
+        "truncated": {"type": "boolean"}
+      }
+    },
+    "count": {"type": ["integer", "null"], "minimum": 0}
+  },
+  "properties": {
+    "id": {"type": "string"},
+    "check_id": {"type": ["string", "null"]},
+    "tool": {"type": ["string", "null"]},
+    "tool_version": {"type": ["string", "null"]},
+    "argv": {"type": "array", "items": {"type": "string"}},
+    "cwd": {"type": "string"},
+    "started_at": {"type": ["string", "null"], "format": "date-time"},
+    "duration_seconds": {"type": ["number", "null"], "minimum": 0},
+    "exit_code": {"type": ["integer", "null"]},
+    "status": {"enum": ["completed", "timeout", "failed-to-start", "missing-tool", "blocked", "skipped"]},
+    "outcome": {"enum": ["clean", "findings", "tests-failed", "tool-error", "parse-error", "not-run"]},
+    "outcome_detail": {"type": ["string", "null"]},
+    "stdout": {"oneOf": [{"$ref": "#/$defs/stream"}, {"type": "null"}]},
+    "stderr": {"oneOf": [{"$ref": "#/$defs/stream"}, {"type": "null"}]},
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "description"],
+        "properties": {"path": {"type": "string"}, "description": {"type": "string"}, "retained": {"type": "boolean"}}
+      }
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applied", "replacements"],
+      "properties": {"applied": {"type": "boolean"}, "replacements": {"type": "integer", "minimum": 0}}
+    },
+    "test_totals": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["total", "passed", "failed", "skipped", "errored"],
+      "properties": {
+        "total": {"$ref": "#/$defs/count"},
+        "passed": {"$ref": "#/$defs/count"},
+        "failed": {"$ref": "#/$defs/count"},
+        "skipped": {"$ref": "#/$defs/count"},
+        "errored": {"$ref": "#/$defs/count"}
+      }
+    },
+    "findings_count": {"type": ["integer", "null"], "minimum": 0},
+    "parse_limitations": {"type": "array", "items": {"type": "string"}},
+    "requires": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["external_tool", "repo_code", "network", "writes_cache"],
+      "properties": {
+        "external_tool": {"type": "boolean"},
+        "repo_code": {"type": "boolean"},
+        "network": {"type": "boolean"},
+        "writes_cache": {"type": "boolean"}
+      }
+    }
+  }
+}

@@ -1,0 +1,326 @@
+"""Adapters for Gitleaks, Semgrep and npm audit."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+from ..findings import make_finding
+from ..policy import Requirements
+from ..runner import RunResult
+from .base import (
+    STATUS_TESTED_FIXTURES,
+    Adapter,
+    Context,
+    ParseOutcome,
+    load_json_output,
+    relpath,
+    unexpected_exit,
+)
+
+
+class GitleaksAdapter(Adapter):
+    id = "gitleaks"
+    tool = "gitleaks"
+    executable = "gitleaks"
+    version_args = ("version",)
+    category = "secrets"
+    description = "Gitleaks secret scan of the working tree (--no-git, --redact)."
+    requires = Requirements(external_tool=True)
+    status = STATUS_TESTED_FIXTURES
+    exit_codes = {0: "no leaks", 1: "leaks found", 126: "unknown flag"}
+    notes = (
+        "Scans files only (not history). Uses `detect --no-git`, deprecated in newer v8 "
+        "releases in favour of `gitleaks dir` but still accepted. A repository "
+        ".gitleaks.toml can allowlist paths; review it."
+    )
+
+    def applies(self, inventory: dict[str, Any], root: Path) -> tuple[bool, str]:
+        return True, "secret scanning applies to every repository"
+
+    def argv(self, ctx: Context) -> list[str]:
+        return [
+            "gitleaks",
+            "detect",
+            "--no-git",
+            "--source",
+            ".",
+            "--no-banner",
+            "--redact",
+            "--report-format",
+            "json",
+            "--report-path",
+            str(ctx.artifact_dir / "gitleaks.json"),
+            "--exit-code",
+            "1",
+            *ctx.extra_args,
+        ]
+
+    def interpret(self, result: RunResult, ctx: Context) -> ParseOutcome:
+        if result.exit_code not in (0, 1):
+            return unexpected_exit(result, self.exit_codes)
+        report = ctx.artifact_dir / "gitleaks.json"
+        if not report.is_file():
+            return ParseOutcome("parse-error", "gitleaks report was not written")
+        data, err = load_json_output(report.read_text(encoding="utf-8", errors="replace"), False)
+        if err:
+            return ParseOutcome("parse-error", err)
+        if not isinstance(data, list):
+            return ParseOutcome("parse-error", "expected a JSON array of leaks")
+        findings = []
+        for item in data:
+            if not isinstance(item, dict) or "File" not in item:
+                continue
+            findings.append(
+                make_finding(
+                    tool="gitleaks",
+                    check_id=self.id,
+                    tool_version=ctx.tool_version,
+                    category="secrets",
+                    rule_id=item.get("RuleID"),
+                    title=f"Possible secret: {item.get('Description') or item.get('RuleID')}",
+                    message=item.get("Description"),
+                    severity="high",
+                    confidence="medium",
+                    path=relpath(item["File"], ctx.root),
+                    line=item.get("StartLine"),
+                    end_line=item.get("EndLine"),
+                    column=item.get("StartColumn"),
+                    # The matched text is deliberately not copied into the report.
+                    evidence=f"rule {item.get('RuleID')}; entropy {item.get('Entropy')}",
+                    remediation="Rotate the credential if real, remove it from the file and "
+                    "history, "
+                    "and load it from a secret store.",
+                    discriminator=str(item.get("Fingerprint", "")),
+                )
+            )
+        if result.exit_code == 1 and not findings:
+            return ParseOutcome("parse-error", "exit code 1 but no leaks parsed")
+        if findings:
+            return ParseOutcome("findings", f"{len(findings)} possible secret(s)", findings)
+        return ParseOutcome("clean", "no leaks reported")
+
+
+_SEMGREP_SEVERITY = {
+    "CRITICAL": "critical",
+    "ERROR": "high",
+    "HIGH": "high",
+    "WARNING": "medium",
+    "MEDIUM": "medium",
+    "INFO": "low",
+    "LOW": "low",
+}
+SEMGREP_LOCAL_CONFIGS = (".semgrep.yml", ".semgrep.yaml", ".semgrep")
+
+
+class _SemgrepBase(Adapter):
+    tool = "semgrep"
+    executable = "semgrep"
+    category = "security"
+    status = STATUS_TESTED_FIXTURES
+    exit_codes = {
+        0: "scan completed (findings may be present)",
+        1: "findings with --error",
+        2: "scan failed",
+        3: "invalid code in target",
+        4: "invalid pattern",
+        5: "unparseable YAML",
+        7: "missing config",
+        8: "invalid language",
+    }
+
+    def config_args(self, ctx: Context) -> list[str]:
+        raise NotImplementedError
+
+    def argv(self, ctx: Context) -> list[str]:
+        excludes = [arg for e in ctx.excludes for arg in ("--exclude", e)]
+        return [
+            "semgrep",
+            "scan",
+            "--json",
+            "--metrics=off",
+            "--disable-version-check",
+            "--quiet",
+            *self.config_args(ctx),
+            *excludes,
+            *ctx.extra_args,
+            ".",
+        ]
+
+    def interpret(self, result: RunResult, ctx: Context) -> ParseOutcome:
+        if result.exit_code not in (0, 1):
+            return unexpected_exit(result, self.exit_codes)
+        data, err = load_json_output(result.stdout.text(), result.stdout.truncated)
+        if err:
+            return ParseOutcome("parse-error", err)
+        if not isinstance(data, dict) or not isinstance(data.get("results"), list):
+            return ParseOutcome("parse-error", "expected an object with a 'results' array")
+        findings = []
+        for item in data["results"]:
+            if not isinstance(item, dict) or "path" not in item:
+                continue
+            extra = item.get("extra") or {}
+            meta = extra.get("metadata") or {}
+            sev = str(extra.get("severity", "")).upper()
+            conf = str(meta.get("confidence", "")).lower()
+            refs = meta.get("references") or []
+            cwe = meta.get("cwe")
+            if isinstance(cwe, list):
+                refs = [*refs, *[str(c) for c in cwe]]
+            start = item.get("start") or {}
+            end = item.get("end") or {}
+            findings.append(
+                make_finding(
+                    tool="semgrep",
+                    check_id=self.id,
+                    tool_version=ctx.tool_version,
+                    category="security",
+                    rule_id=item.get("check_id"),
+                    title=f"{item.get('check_id')}: {extra.get('message', '')}"[:300],
+                    message=extra.get("message"),
+                    severity=_SEMGREP_SEVERITY.get(sev, "unknown"),
+                    confidence=conf if conf in {"high", "medium", "low"} else "unknown",
+                    original_severity=extra.get("severity"),
+                    original_confidence=meta.get("confidence"),
+                    path=relpath(item["path"], ctx.root),
+                    line=start.get("line"),
+                    end_line=end.get("line"),
+                    column=start.get("col"),
+                    references=[str(r) for r in refs if isinstance(r, str | int)],
+                )
+            )
+        errors = data.get("errors") or []
+        limitations = [f"semgrep reported {len(errors)} error(s) (partial scan)"] if errors else []
+        if findings:
+            return ParseOutcome(
+                "findings", f"{len(findings)} finding(s)", findings, limitations=limitations
+            )
+        return ParseOutcome("clean", "no findings reported", limitations=limitations)
+
+
+class SemgrepLocalAdapter(_SemgrepBase):
+    id = "semgrep-local"
+    description = "Semgrep with rules committed in the repository (.semgrep.yml or .semgrep/)."
+    requires = Requirements(external_tool=True)
+    notes = (
+        "Offline when the rules are local. Coverage is only as good as the rules; a clean "
+        "scan is not proof of security."
+    )
+
+    def applies(self, inventory: dict[str, Any], root: Path) -> tuple[bool, str]:
+        for name in SEMGREP_LOCAL_CONFIGS:
+            if (root / name).exists():
+                return True, f"{name} found"
+        return False, "no .semgrep.yml or .semgrep/ rules in the repository root"
+
+    def config_args(self, ctx: Context) -> list[str]:
+        for name in SEMGREP_LOCAL_CONFIGS:
+            if (ctx.root / name).exists():
+                return ["--config", name]
+        return []
+
+
+class SemgrepRegistryAdapter(_SemgrepBase):
+    id = "semgrep-registry"
+    description = "Semgrep with registry ruleset p/default (downloads rules)."
+    requires = Requirements(external_tool=True, network=True)
+    notes = "Downloads rules from the Semgrep registry; source code is scanned locally."
+
+    def applies(self, inventory: dict[str, Any], root: Path) -> tuple[bool, str]:
+        return True, "registry rules cover many languages"
+
+    def config_args(self, ctx: Context) -> list[str]:
+        return ["--config", "p/default"]
+
+
+_NPM_SEVERITY = {
+    "critical": "critical",
+    "high": "high",
+    "moderate": "medium",
+    "low": "low",
+    "info": "info",
+}
+
+
+class NpmAuditAdapter(Adapter):
+    id = "npm-audit"
+    tool = "npm"
+    executable = "npm"
+    category = "dependency"
+    description = "npm audit of package-lock.json against the npm advisory database."
+    requires = Requirements(external_tool=True, network=True)
+    status = STATUS_TESTED_FIXTURES
+    exit_codes = {
+        0: "no vulnerabilities at or above audit level",
+        1: "vulnerabilities found, or an error (distinguished by the JSON body)",
+    }
+    notes = (
+        "Sends the dependency tree (not source code) to the registry. Does not run "
+        "install scripts. Root lockfile only in v0.1."
+    )
+
+    def applies(self, inventory: dict[str, Any], root: Path) -> tuple[bool, str]:
+        if (root / "package-lock.json").is_file():
+            return True, "package-lock.json found"
+        return False, "no package-lock.json at the repository root"
+
+    def argv(self, ctx: Context) -> list[str]:
+        return ["npm", "audit", "--json", *ctx.extra_args]
+
+    def interpret(self, result: RunResult, ctx: Context) -> ParseOutcome:
+        if result.exit_code not in (0, 1):
+            return unexpected_exit(result, self.exit_codes)
+        data, err = load_json_output(result.stdout.text(), result.stdout.truncated)
+        if err:
+            return ParseOutcome("parse-error", err)
+        if not isinstance(data, dict):
+            return ParseOutcome("parse-error", "expected a JSON object")
+        if "error" in data:
+            error = data["error"]
+            summary = error.get("summary") if isinstance(error, dict) else str(error)
+            return ParseOutcome("tool-error", f"npm audit error: {summary}")
+        vulns = data.get("vulnerabilities")
+        if not isinstance(vulns, dict):
+            return ParseOutcome(
+                "parse-error",
+                "missing 'vulnerabilities' object (unsupported audit report version?)",
+            )
+        findings = []
+        for name, v in sorted(vulns.items()):
+            if not isinstance(v, dict):
+                continue
+            via = v.get("via") or []
+            advisories = [x for x in via if isinstance(x, dict)]
+            refs = [a["url"] for a in advisories if a.get("url")]
+            titles = [a["title"] for a in advisories if a.get("title")]
+            transitive = [x for x in via if isinstance(x, str)]
+            sev = str(v.get("severity", "")).lower()
+            findings.append(
+                make_finding(
+                    tool="npm-audit",
+                    check_id=self.id,
+                    tool_version=ctx.tool_version,
+                    category="dependency",
+                    rule_id=f"npm:{name}",
+                    title=f"Vulnerable dependency {name} ({v.get('range', 'unknown range')})",
+                    message="; ".join(titles)
+                    or (f"via {', '.join(transitive)}" if transitive else None),
+                    severity=_NPM_SEVERITY.get(sev, "unknown"),
+                    confidence="high",
+                    original_severity=v.get("severity"),
+                    path="package-lock.json",
+                    evidence=f"installed paths: {', '.join(v.get('nodes', [])[:5])}"
+                    if v.get("nodes")
+                    else None,
+                    remediation="fix available via npm audit fix"
+                    if v.get("fixAvailable")
+                    else "no automatic fix reported; review the advisory",
+                    references=refs,
+                    discriminator=name,
+                )
+            )
+        if findings:
+            return ParseOutcome("findings", f"{len(findings)} vulnerable package(s)", findings)
+        if result.exit_code == 1:
+            return ParseOutcome("parse-error", "exit code 1 but no vulnerabilities parsed")
+        return ParseOutcome("clean", "no vulnerabilities reported")

@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:archonix:schema:performance-report:0.1",
+  "title": "Archonix API smoke/latency report",
+  "description": "Bounded smoke measurement of explicitly authorized read-only endpoints. This is smoke evidence, not a load test. Percentiles carry their sample size and a reliability flag.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "schema_version", "generated_at", "methodology", "target", "endpoints", "limitations"],
+  "properties": {
+    "kind": {"const": "performance-report"},
+    "schema_version": {"const": "0.1"},
+    "example": {"type": "boolean"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "revision": {"type": ["string", "null"]},
+    "environment": {"type": ["string", "null"]},
+    "methodology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "requests_per_endpoint", "concurrency", "warmup_requests", "timeout_seconds", "percentile_method", "reliability_rule"],
+      "properties": {
+        "type": {"const": "smoke"},
+        "requests_per_endpoint": {"type": "integer", "minimum": 1},
+        "concurrency": {"type": "integer", "minimum": 1},
+        "warmup_requests": {"type": "integer", "minimum": 0},
+        "timeout_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "percentile_method": {"type": "string"},
+        "reliability_rule": {"type": "string"}
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_url", "loopback"],
+      "properties": {"base_url": {"type": "string"}, "loopback": {"type": "boolean"}}
+    },
+    "endpoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["method", "path", "samples", "errors", "timeouts", "status_codes", "latency_ms", "threshold"],
+        "properties": {
+          "method": {"enum": ["GET", "HEAD"]},
+          "path": {"type": "string"},
+          "samples": {"type": "integer", "minimum": 0},
+          "errors": {"type": "integer", "minimum": 0},
+          "timeouts": {"type": "integer", "minimum": 0},
+          "status_codes": {"type": "object", "additionalProperties": {"type": "integer"}},
+          "duration_seconds": {"type": "number"},
+          "throughput_rps": {"type": ["number", "null"]},
+          "latency_ms": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["min", "mean", "p50", "p95", "p99", "max"],
+            "properties": {
+              "min": {"type": ["number", "null"]},
+              "mean": {"type": ["number", "null"]},
+              "max": {"type": ["number", "null"]},
+              "p50": {"$ref": "#/$defs/percentile"},
+              "p95": {"$ref": "#/$defs/percentile"},
+              "p99": {"$ref": "#/$defs/percentile"}
+            }
+          },
+          "threshold": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["p95_ms", "max_error_rate", "result"],
+            "properties": {
+              "p95_ms": {"type": ["number", "null"]},
+              "max_error_rate": {"type": ["number", "null"]},
+              "result": {"enum": ["pass", "fail", "unknown", "not-configured"]}
+            }
+          }
+        }
+      }
+    },
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "percentile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "reliable"],
+      "properties": {"value": {"type": ["number", "null"]}, "reliable": {"type": "boolean"}}
+    }
+  }
+}

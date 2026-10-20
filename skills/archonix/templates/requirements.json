@@ -1,0 +1,20 @@
+{
+  "kind": "requirements-ledger",
+  "schema_version": "0.1",
+  "project": "{{project}}",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "title": "Replace with the first requirement",
+      "description": "Describe the behaviour in terms the user would confirm.",
+      "source": {"type": "inferred", "reference": null},
+      "priority": "should",
+      "acceptance_criteria": [],
+      "dependencies": [],
+      "status": "proposed",
+      "open_questions": [],
+      "assumptions": [],
+      "verification": {"method": "not-yet-defined", "evidence": []}
+    }
+  ]
+}

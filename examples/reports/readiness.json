@@ -1,0 +1,95 @@
+{
+  "kind": "release-readiness",
+  "schema_version": "0.1",
+  "generated_at": "2026-10-20T21:29:45Z",
+  "policy": {
+    "name": "example-release-policy",
+    "source": "examples/readiness-policy.toml"
+  },
+  "verdict": "not-ready",
+  "rules": [
+    {
+      "id": "check:ruff",
+      "description": "required check 'ruff' ran and completed",
+      "result": "pass",
+      "detail": "findings (4 finding(s))",
+      "evidence": [
+        "exec exec-ruff"
+      ]
+    },
+    {
+      "id": "check:bandit",
+      "description": "required check 'bandit' ran and completed",
+      "result": "pass",
+      "detail": "findings (5 finding(s))",
+      "evidence": [
+        "exec exec-bandit"
+      ]
+    },
+    {
+      "id": "check:pytest",
+      "description": "required check 'pytest' ran and completed",
+      "result": "pass",
+      "detail": "clean (3 passed, 0 skipped)",
+      "evidence": [
+        "exec exec-pytest"
+      ]
+    },
+    {
+      "id": "max-severity",
+      "description": "no open findings more severe than 'medium'",
+      "result": "fail",
+      "detail": "1 open finding(s) above 'medium'",
+      "evidence": [
+        "ARX-31037a45378a1cb8"
+      ]
+    },
+    {
+      "id": "no-unparsed-checks",
+      "description": "every executed check produced interpretable output",
+      "result": "pass",
+      "detail": "all executed checks parsed",
+      "evidence": []
+    },
+    {
+      "id": "tests",
+      "description": "automated tests ran, at least one test executed, none failed",
+      "result": "pass",
+      "detail": "3 tests",
+      "evidence": [
+        "exec-pytest"
+      ]
+    },
+    {
+      "id": "revision",
+      "description": "all reports were produced from the same recorded revision",
+      "result": "unknown",
+      "detail": "revision not recorded in every report",
+      "evidence": []
+    },
+    {
+      "id": "clean-worktree",
+      "description": "reports were produced from a clean working tree",
+      "result": "unknown",
+      "detail": "working-tree status unknown",
+      "evidence": []
+    },
+    {
+      "id": "must-requirements",
+      "description": "every 'must' requirement is verified",
+      "result": "fail",
+      "detail": "not verified: REQ-002",
+      "evidence": []
+    }
+  ],
+  "inputs": {
+    "reports": [
+      "examples/reports/report.json"
+    ],
+    "ledger": "examples/requirements/ledger.json"
+  },
+  "limitations": [
+    "The verdict reflects only the configured policy and the supplied evidence; it is not a guarantee of security, correctness or production fitness."
+  ],
+  "example": true
+}

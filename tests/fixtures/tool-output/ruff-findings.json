@@ -1,0 +1,78 @@
+[
+ {
+  "cell": null,
+  "code": "S105",
+  "end_location": {
+   "column": 50,
+   "row": 6
+  },
+  "filename": "/repo/app/ops.py",
+  "fix": null,
+  "location": {
+   "column": 21,
+   "row": 6
+  },
+  "message": "Possible hardcoded password assigned to: \"DATABASE_PASSWORD\"",
+  "name": "hardcoded-password-string",
+  "noqa_row": 6,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/hardcoded-password-string"
+ },
+ {
+  "cell": null,
+  "code": "S602",
+  "end_location": {
+   "column": 27,
+   "row": 11
+  },
+  "filename": "/repo/app/ops.py",
+  "fix": null,
+  "location": {
+   "column": 12,
+   "row": 11
+  },
+  "message": "`subprocess` call with `shell=True` identified, security issue",
+  "name": "subprocess-popen-with-shell-equals-true",
+  "noqa_row": 11,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/subprocess-popen-with-shell-equals-true"
+ },
+ {
+  "cell": null,
+  "code": "S101",
+  "end_location": {
+   "column": 11,
+   "row": 9
+  },
+  "filename": "/repo/tests/test_pricing.py",
+  "fix": null,
+  "location": {
+   "column": 5,
+   "row": 9
+  },
+  "message": "Use of `assert` detected",
+  "name": "assert",
+  "noqa_row": 9,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/assert"
+ },
+ {
+  "cell": null,
+  "code": "S101",
+  "end_location": {
+   "column": 11,
+   "row": 13
+  },
+  "filename": "/repo/tests/test_pricing.py",
+  "fix": null,
+  "location": {
+   "column": 5,
+   "row": 13
+  },
+  "message": "Use of `assert` detected",
+  "name": "assert",
+  "noqa_row": 13,
+  "severity": "error",
+  "url": "https://docs.astral.sh/ruff/rules/assert"
+ }
+]

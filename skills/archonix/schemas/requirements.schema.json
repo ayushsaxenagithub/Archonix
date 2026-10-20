@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:archonix:schema:requirements:0.1",
+  "title": "Archonix requirements ledger",
+  "description": "Structured product requirements with sources, acceptance criteria, dependencies, open questions and verification evidence. Cross-field rules (unique IDs, dependency cycles, approval gates) are enforced by `archonix requirements validate`, not by this schema alone.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "schema_version", "project", "requirements"],
+  "properties": {
+    "kind": {"const": "requirements-ledger"},
+    "schema_version": {"const": "0.1"},
+    "example": {"type": "boolean"},
+    "project": {"type": "string", "minLength": 1},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "requirements": {"type": "array", "items": {"$ref": "#/$defs/requirement"}}
+  },
+  "$defs": {
+    "requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "description", "source", "priority", "acceptance_criteria", "dependencies", "status", "verification"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[A-Z][A-Z0-9]*-[0-9]{1,6}$"},
+        "title": {"type": "string", "minLength": 1},
+        "description": {"type": "string", "minLength": 1},
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": {"enum": ["user-confirmed", "document", "repository-evidence", "inferred", "assumption"]},
+            "reference": {"type": ["string", "null"]},
+            "confirmed_at": {"type": ["string", "null"]}
+          }
+        },
+        "priority": {"enum": ["must", "should", "could", "wont"]},
+        "acceptance_criteria": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "description"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^AC-[A-Z0-9]+(-[A-Z0-9]+)*$"},
+              "description": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "dependencies": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "status": {"enum": ["proposed", "approved", "in-progress", "implemented", "verified", "deferred", "rejected"]},
+        "open_questions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "question", "critical"],
+            "properties": {
+              "id": {"type": "string"},
+              "question": {"type": "string", "minLength": 1},
+              "critical": {"type": "boolean"},
+              "resolution": {"type": ["string", "null"]},
+              "accepted_as_assumption": {"type": "boolean"}
+            }
+          }
+        },
+        "assumptions": {"type": "array", "items": {"type": "string"}},
+        "verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["method"],
+          "properties": {
+            "method": {"enum": ["automated-test", "manual-test", "review", "analysis", "demonstration", "not-yet-defined"]},
+            "evidence": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["reference", "result"],
+                "properties": {
+                  "acceptance_criterion": {"type": ["string", "null"]},
+                  "reference": {"type": "string", "minLength": 1},
+                  "result": {"enum": ["pass", "fail", "unknown"]},
+                  "recorded_at": {"type": ["string", "null"]}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

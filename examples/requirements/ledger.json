@@ -1,0 +1,64 @@
+{
+  "kind": "requirements-ledger",
+  "schema_version": "0.1",
+  "example": true,
+  "project": "example-python-service",
+  "updated_at": "2026-10-21T00:00:00Z",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "title": "Percentage discounts",
+      "description": "Orders can carry a whole-number percentage discount between 0 and 100; totals round half-up to cents.",
+      "source": {"type": "user-confirmed", "reference": "Synthetic kickoff notes", "confirmed_at": "2026-10-01"},
+      "priority": "must",
+      "acceptance_criteria": [
+        {"id": "AC-001-1", "description": "A 25% discount on 200.00 yields 150.00."},
+        {"id": "AC-001-2", "description": "Percentages outside 0..100 are rejected with an error."}
+      ],
+      "dependencies": [],
+      "status": "verified",
+      "open_questions": [
+        {"id": "Q-001", "question": "Do discounts stack?", "critical": true, "resolution": "No; one discount per order.", "accepted_as_assumption": false}
+      ],
+      "assumptions": [],
+      "verification": {
+        "method": "automated-test",
+        "evidence": [
+          {"acceptance_criterion": "AC-001-1", "reference": "check:pytest", "result": "pass", "recorded_at": "2026-10-21T00:00:00Z"},
+          {"acceptance_criterion": "AC-001-2", "reference": "tests/test_pricing.py::test_rejects_out_of_range_percent", "result": "pass", "recorded_at": "2026-10-21T00:00:00Z"}
+        ]
+      }
+    },
+    {
+      "id": "REQ-002",
+      "title": "Host reachability check",
+      "description": "Operators can check whether a configured host is reachable without allowing arbitrary command execution.",
+      "source": {"type": "document", "reference": "Synthetic ops runbook"},
+      "priority": "must",
+      "acceptance_criteria": [
+        {"id": "AC-002-1", "description": "The host argument cannot inject shell commands."}
+      ],
+      "dependencies": ["REQ-001"],
+      "status": "in-progress",
+      "open_questions": [
+        {"id": "Q-002", "question": "Which hosts may be checked?", "critical": true, "resolution": null, "accepted_as_assumption": true}
+      ],
+      "assumptions": ["Only hosts from configuration may be checked."],
+      "verification": {"method": "automated-test", "evidence": []}
+    },
+    {
+      "id": "REQ-003",
+      "title": "Price history export",
+      "description": "Export historic prices as CSV.",
+      "source": {"type": "inferred", "reference": null},
+      "priority": "could",
+      "acceptance_criteria": [],
+      "dependencies": [],
+      "status": "proposed",
+      "open_questions": [
+        {"id": "Q-003", "question": "Is this needed for launch?", "critical": false, "resolution": null}
+      ],
+      "verification": {"method": "not-yet-defined"}
+    }
+  ]
+}

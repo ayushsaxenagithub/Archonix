@@ -1,0 +1,18 @@
+[project]
+name = "example-python-service"
+version = "0.0.1"
+description = "Synthetic service used by Archonix examples. Not real software."
+requires-python = ">=3.11"
+dependencies = ["flask>=3", "psycopg[binary]>=3.1", "redis>=5", "celery>=5", "pyjwt>=2"]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "S"]

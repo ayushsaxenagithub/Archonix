@@ -1,0 +1,9 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Example service", "version": "0.0.1"},
+  "paths": {
+    "/health": {"get": {"operationId": "health", "summary": "Liveness", "responses": {"200": {"description": "ok"}}}},
+    "/prices/{sku}": {"get": {"operationId": "getPrice", "parameters": [{"name": "sku", "in": "path", "required": true, "schema": {"type": "string"}}], "security": [{"bearer": []}], "responses": {"200": {"description": "ok"}}}},
+    "/orders": {"post": {"operationId": "createOrder", "responses": {"201": {"description": "created"}}}}
+  }
+}
