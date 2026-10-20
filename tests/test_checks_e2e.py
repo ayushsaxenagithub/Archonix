@@ -58,7 +58,12 @@ def test_complete_flow_with_findings(
     assert "B602" in md and "## Limitations" in md and "not proof" in md
 
 
-def test_missing_tool_and_policy_blocks(make_repo: Callable[..., Path]) -> None:
+def test_missing_tool_and_policy_blocks(
+    make_repo: Callable[..., Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    empty_bin = tmp_path / "empty-bin"
+    empty_bin.mkdir()
+    monkeypatch.setenv("PATH", str(empty_bin))  # deterministic: no tools installed
     report = run_checks(make_repo(PY_REPO), ["gitleaks", "pytest", "semgrep-registry"])
     ex = by_check(report)
     assert (

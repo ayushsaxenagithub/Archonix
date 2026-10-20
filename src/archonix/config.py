@@ -85,6 +85,9 @@ class Settings:
     checks: dict[str, CheckSettings] = field(default_factory=dict)
     sources: dict[str, str] = field(default_factory=dict)
     ignored: list[str] = field(default_factory=list)
+    # Exclusions contributed by repository config; they also hide files from scanners,
+    # so reports list them.
+    repo_excludes: list[str] = field(default_factory=list)
     files_loaded: list[str] = field(default_factory=list)
 
     def check(self, check_id: str) -> CheckSettings:
@@ -124,8 +127,11 @@ def read_toml(path: Path) -> dict[str, Any]:
 def _apply_layer(s: Settings, data: Mapping[str, Any], label: str, trusted: bool) -> None:
     inv = data.get("inventory", {})
     if "exclude" in inv:
-        s.exclude.extend(x for x in inv["exclude"] if x not in s.exclude)
+        added = [x for x in inv["exclude"] if x not in s.exclude]
+        s.exclude.extend(added)
         s.sources["inventory.exclude"] = f"defaults + {label}"
+        if not trusted:
+            s.repo_excludes.extend(added)
     for key, attr in (("max_files", "max_files"), ("max_file_bytes", "max_file_bytes")):
         if key in inv:
             setattr(s, attr, inv[key])
@@ -158,7 +164,13 @@ def _apply_layer(s: Settings, data: Mapping[str, Any], label: str, trusted: bool
 
     red = data.get("redaction", {})
     s.sensitive_env_names.extend(red.get("sensitive_env_names", []))
-    s.extra_redaction_patterns.extend(red.get("extra_patterns", []))
+    if trusted:
+        s.extra_redaction_patterns.extend(red.get("extra_patterns", []))
+    elif red.get("extra_patterns"):
+        s.ignored.append(
+            f"{label}: redaction.extra_patterns (repository config may not supply regular "
+            "expressions; a crafted pattern could stall redaction)"
+        )
 
     for check_id, cfg in data.get("checks", {}).items():
         cs = s.checks.setdefault(check_id, CheckSettings())

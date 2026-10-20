@@ -14,10 +14,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import shutil
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from . import __version__
@@ -66,6 +67,61 @@ def target_dir(assistant: str, scope: str, *, home: Path, project_dir: Path | No
     return project_dir.resolve() / base / SKILL_NAME
 
 
+def _symlink_in_path(base: Path, target: Path) -> Path | None:
+    """Return the first existing symlink among base/.../target (base itself excluded)."""
+    try:
+        parts = target.relative_to(base).parts
+    except ValueError:
+        return target
+    current = base
+    for part in parts:
+        current = current / part
+        if current.is_symlink():
+            return current
+    return None
+
+
+def _member(target: Path, rel: object) -> Path | None:
+    """Resolve a manifest/plan entry to a path inside ``target``, or None if unsafe.
+
+    Entries must be plain relative POSIX paths with no ``..``; no existing component
+    between ``target`` and the file may be a symlink, so writes and deletes cannot be
+    redirected outside the skill directory.
+    """
+    if not isinstance(rel, str) or not rel or "\\" in rel:
+        return None
+    pure = PurePosixPath(rel)
+    if pure.is_absolute() or any(part in {"", ".", ".."} for part in pure.parts):
+        return None
+    dest = target.joinpath(*pure.parts)
+    if _symlink_in_path(target, dest) is not None:
+        return None
+    if not dest.resolve().is_relative_to(target.resolve()):
+        return None
+    return dest
+
+
+def _target_problem(target: Path, scope: str, project_dir: Path | None) -> str | None:
+    if target.is_symlink():
+        return f"{target} is a symlink; refusing to install or remove through it"
+    if scope == "project" and project_dir is not None:
+        # Project directories are repository-controlled: a symlinked .claude/skills
+        # could point anywhere, so no component below the project root may be a link.
+        link = _symlink_in_path(project_dir.resolve(), target)
+        if link is not None:
+            return f"{link} is a symlink; refusing to install or remove through it"
+    return None
+
+
+def _unsafe_entries(target: Path, files: dict[str, Any]) -> list[str]:
+    return [
+        f"manifest lists an unsafe path {rel!r} (absolute, '..' or through a symlink); "
+        "refusing to act on this manifest"
+        for rel in files
+        if _member(target, rel) is None
+    ]
+
+
 def source_files(source: Path) -> dict[str, Path]:
     files = {}
     for path in sorted(source.rglob("*")):
@@ -101,6 +157,10 @@ def install(
     source = source or skill_root()
     target = target_dir(assistant, scope, home=home, project_dir=project_dir)
     plan = InstallPlan(target)
+    problem = _target_problem(target, scope, project_dir)
+    if problem:
+        plan.conflicts.append(problem)
+        return plan
     new_files = source_files(source)
     manifest = _read_manifest(target) if target.exists() else None
     if target.exists() and manifest is None:
@@ -110,9 +170,14 @@ def install(
         )
         return plan
     old: dict[str, str] = manifest["files"] if manifest else {}
+    plan.conflicts += _unsafe_entries(target, old)
+    if plan.conflicts:
+        return plan
     for rel, src in new_files.items():
-        dest = target / rel
-        if not dest.exists():
+        dest = _member(target, rel)
+        if dest is None:
+            plan.conflicts.append(f"{rel}: path inside the target is a symlink; not writing")
+        elif not dest.exists():
             plan.actions.append(("create", rel))
         elif rel not in old:
             plan.conflicts.append(f"{rel}: exists but is not managed by Archonix")
@@ -124,7 +189,7 @@ def install(
             plan.actions.append(("update", rel))
     for rel, digest in old.items():
         if rel not in new_files:
-            dest = target / rel
+            dest = target / rel  # validated by _unsafe_entries above
             if dest.is_file() and _sha256(dest) == digest:
                 plan.actions.append(("remove-stale", rel))
             elif dest.exists():
@@ -133,10 +198,17 @@ def install(
         return plan
 
     for action, rel in plan.actions:
-        dest = target / rel
+        if action == "unchanged":
+            continue
+        target.mkdir(parents=True, exist_ok=True)
+        dest = _member(target, rel)  # re-checked immediately before acting
+        if dest is None:
+            raise ArchonixError(f"{rel}: path became unsafe during installation; stopped")
         if action in {"create", "update"}:
             dest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(new_files[rel], dest)
+            if _member(target, rel) is None:
+                raise ArchonixError(f"{rel}: path became unsafe during installation; stopped")
+            shutil.copyfile(new_files[rel], dest, follow_symlinks=False)
         elif action == "remove-stale":
             dest.unlink()
     _prune_empty(target)
@@ -159,12 +231,19 @@ def uninstall(
 ) -> InstallPlan:
     target = target_dir(assistant, scope, home=home, project_dir=project_dir)
     plan = InstallPlan(target)
+    problem = _target_problem(target, scope, project_dir)
+    if problem:
+        plan.conflicts.append(problem)
+        return plan
     if not target.exists():
         plan.conflicts.append(f"{target} does not exist; nothing to remove")
         return plan
     manifest = _read_manifest(target)
     if manifest is None:
         plan.conflicts.append(f"{target} has no Archonix manifest; refusing to delete anything")
+        return plan
+    plan.conflicts += _unsafe_entries(target, manifest["files"])
+    if plan.conflicts:
         return plan
     for rel, digest in sorted(manifest["files"].items()):
         dest = target / rel
@@ -179,7 +258,9 @@ def uninstall(
         return plan
     for action, rel in plan.actions:
         if action == "remove":
-            (target / rel).unlink(missing_ok=True)
+            dest = _member(target, rel)
+            if dest is not None and not dest.is_symlink():
+                dest.unlink(missing_ok=True)
     _prune_empty(target)
     if target.exists() and not any(target.iterdir()):
         target.rmdir()
@@ -188,14 +269,12 @@ def uninstall(
 
 
 def _prune_empty(root: Path) -> None:
-    if not root.exists():
+    """Remove empty directories below ``root`` without following symlinks."""
+    if not root.is_dir() or root.is_symlink():
         return
-    for directory in sorted(
-        (p for p in root.rglob("*") if p.is_dir() and not p.is_symlink()),
-        key=lambda p: len(p.parts),
-        reverse=True,
-    ):
-        if not any(directory.iterdir()):
+    for current, _dirs, _files in os.walk(root, topdown=False, followlinks=False):
+        directory = Path(current)
+        if directory != root and not directory.is_symlink() and not any(directory.iterdir()):
             directory.rmdir()
 
 

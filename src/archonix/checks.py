@@ -7,6 +7,7 @@ with the reason, so a report always shows what was *not* checked.
 
 from __future__ import annotations
 
+import os
 import shutil
 import tempfile
 from dataclasses import dataclass
@@ -100,21 +101,41 @@ def _redact_findings(findings: list[dict[str, Any]], redactor: Redactor) -> int:
     return count
 
 
-def _redact_artifacts(directory: Path, redactor: Redactor, limit: int = 20_000_000) -> int:
-    """Redact retained text artifacts in place; binary or oversized files are left as-is."""
+def _redact_artifacts(
+    directory: Path, redactor: Redactor, limit: int = 20_000_000
+) -> tuple[int, list[str]]:
+    """Redact retained text artifacts in place, recursively, without following symlinks.
+
+    Returns (replacements, notes). Files that could not be redacted (binary, oversized,
+    unreadable, symlinks) are left in place and named in the notes so the report says so.
+    """
     count = 0
-    for path in directory.iterdir():
-        if not path.is_file() or path.is_symlink() or path.stat().st_size > limit:
-            continue
-        try:
-            text = path.read_text(encoding="utf-8")
-        except (UnicodeDecodeError, OSError):
-            continue
-        redacted, n = redactor.redact(text)
-        if n:
-            path.write_text(redacted, encoding="utf-8")
-            count += n
-    return count
+    notes: list[str] = []
+    for current, _dirs, files in os.walk(directory, followlinks=False):
+        for name in sorted(files):
+            path = Path(current) / name
+            rel = path.relative_to(directory).as_posix()
+            if path.is_symlink():
+                notes.append(f"retained artifact {rel} is a symlink and was not redacted")
+                continue
+            try:
+                if path.stat().st_size > limit:
+                    notes.append(
+                        f"retained artifact {rel} exceeds {limit} bytes and was not redacted"
+                    )
+                    continue
+                text = path.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                notes.append(f"retained artifact {rel} is not UTF-8 text and was not redacted")
+                continue
+            except OSError as exc:
+                notes.append(f"retained artifact {rel} could not be read for redaction ({exc})")
+                continue
+            redacted, n = redactor.redact(text)
+            if n:
+                path.write_text(redacted, encoding="utf-8")
+                count += n
+    return count, notes
 
 
 def _record(
@@ -145,6 +166,15 @@ def _record(
         red = [redactor.redact(a) for a in argv]
         argv = [a for a, _ in red]
         replacements += sum(n for _, n in red)
+    limitations = list(parsed.limitations) if parsed else []
+    if redactor is not None:
+        # Details and limitations can quote tool output (for example an npm error that
+        # contains a registry URL with credentials), so they are redacted too.
+        detail, n = redactor.redact(detail)
+        replacements += n
+        red_lims = [redactor.redact(x) for x in limitations]
+        limitations = [x for x, _ in red_lims]
+        replacements += sum(n for _, n in red_lims)
     return {
         "id": f"exec-{plan.adapter.id}",
         "check_id": plan.adapter.id,
@@ -164,7 +194,7 @@ def _record(
         "redaction": {"applied": redactor is not None, "replacements": replacements},
         "test_totals": parsed.test_totals if parsed else None,
         "findings_count": len(parsed.findings) if parsed and outcome != "parse-error" else None,
-        "parse_limitations": parsed.limitations if parsed else [],
+        "parse_limitations": limitations,
         "requires": plan.adapter.requires.as_dict(),
     }
 
@@ -241,7 +271,9 @@ def execute_plan(
             else:
                 replaced = 0
             if retained:
-                replaced += _redact_artifacts(work, redactor)
+                n_artifacts, notes = _redact_artifacts(work, redactor)
+                replaced += n_artifacts
+                parsed.limitations.extend(notes)
             artifacts = (
                 [
                     {

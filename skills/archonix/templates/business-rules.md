@@ -12,6 +12,7 @@ Last updated: {{date}}
 ## Validations
 
 ## State transitions
+
 ```mermaid
 stateDiagram-v2
   [*] --> Draft

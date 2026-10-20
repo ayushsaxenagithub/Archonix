@@ -6,6 +6,7 @@ Edge labels: **verified** (seen in code/config), **inferred** (implied by depend
 conventions), **unknown** (not determinable statically).
 
 ## System context
+
 ```mermaid
 flowchart LR
   user([User]) --> app[Application]
@@ -13,10 +14,12 @@ flowchart LR
 ```
 
 ## Components
+
 | Component | Responsibility | Path | Depends on | Evidence status |
 |---|---|---|---|---|
 
 ## Request flow
+
 ```mermaid
 sequenceDiagram
   participant Client
@@ -36,5 +39,6 @@ sequenceDiagram
 ## Deployment topology
 
 ## Evidence
+
 | Element | Relationship | Status | Source |
 |---|---|---|---|

@@ -2,11 +2,21 @@
 
 ## Reporting a vulnerability
 
-Please report vulnerabilities privately using GitHub's **"Report a vulnerability"**
-(private vulnerability reporting) on this repository's Security tab. Do not open a
-public issue for security problems. Include affected version/commit, reproduction steps
-and impact. We aim to acknowledge reports within a reasonable time; this is a volunteer
-project with no guaranteed response window.
+Do **not** put vulnerability details in a public issue, pull request or discussion.
+
+GitHub private vulnerability reporting is **not currently enabled** on this repository
+(checked 2026-10-21), so the "Report a vulnerability" button is not available. Until it
+is enabled:
+
+1. Open a public issue titled **"Security contact request"** that contains *no* details
+   of the problem — only that you have something to report privately.
+2. The maintainer will reply with a private channel (for example a draft security
+   advisory that you are invited to).
+3. Then share the affected version or commit, reproduction steps and impact.
+
+If the Security tab does show "Report a vulnerability", use that instead; this file will
+be updated when the setting changes. This is a volunteer project with no guaranteed
+response window; please allow reasonable time before any public disclosure.
 
 ## Scope
 

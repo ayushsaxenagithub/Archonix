@@ -22,12 +22,12 @@ Status labels:
 | Safe subprocess execution (timeout, process-group kill, bounded output, minimal env) | Tested | |
 | Execution records, findings, workflow reports (schemas, JSON + Markdown) | Tested | |
 | Conservative finding deduplication | Tested | exact-identity merge; cross-tool overlaps linked |
-| Layered secret redaction | Tested + real | best-effort, see trust model |
+| Layered secret redaction (output, details, limitations, retained artifacts incl. nested; unredactable artifacts reported) | Tested + real | best-effort, see trust model |
 | Configuration precedence and restrict-only repo config | Tested | |
 | Write boundaries, destructive gates (installer, docs init) | Tested | |
 | ruff / bandit / vulture adapters | Tested + real | |
 | pytest adapter (JUnit) | Tested + real | requires `--allow-repo-code` |
-| gitleaks adapter | Implemented, unverified here | gitleaks not installed in the dev environment |
+| gitleaks adapter | Tested + real | verified with gitleaks 8.30.1 locally and in the CI `secrets` job |
 | semgrep (local rules / registry) adapters | Implemented, unverified here | semgrep not installed |
 | npm audit adapter | Implemented, unverified here | network-dependent; not run |
 | Release readiness (configurable policy) | Tested | |
@@ -42,5 +42,10 @@ Status labels:
 | Dead-code cleanup proposals | Manual workflow | never automatic |
 | Locust integration, revision-to-revision perf comparison | Planned | manual guidance only |
 | Installer for Claude Code / Codex / Cursor | Tested (file layout) | assistant discovery not verified — see assistants.md |
+| Installer path safety (manifest traversal, symlinked targets/subdirectories refused) | Tested | POSIX symlink tests; Windows not tested |
+| Repository-local executables via relative `PATH` entries blocked | Tested | |
+| CI: lint, types, tests, build smoke, markdownlint, gitleaks history scan | Configured; hosted runs recorded in GitHub Actions | see docs/ci.md |
+| CI: dependency audit (pip-audit over uv.lock) | Configured (weekly / on dependency change); verified locally | network-dependent |
+| Offline internal Markdown link check | Tested | external links are not checked |
 | Sandboxing of launched tools | Unsupported | use containers/VMs |
 | Hosted service, telemetry, extra AI API | Unsupported by design | |

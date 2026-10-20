@@ -6,15 +6,18 @@ Status: draft · Last updated: {{date}} · Requirements ledger: `docs/requiremen
 <!-- What problem does this solve, for whom, and how will success be measured? -->
 
 ## Users and roles
+
 | Role | Goals | Permissions |
 |---|---|---|
 
 ## Scope
+
 ### In scope
 <!-- Reference requirement IDs, e.g. REQ-001 -->
 ### Explicitly out of scope
 
 ## Core features
+
 | Feature | Requirement IDs | Priority |
 |---|---|---|
 

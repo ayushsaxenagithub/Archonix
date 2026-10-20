@@ -227,7 +227,10 @@ def smoke(
 
 
 def openapi_endpoints(spec_path: Path) -> list[dict[str, Any]]:
-    text = spec_path.read_text(encoding="utf-8")
+    try:
+        text = spec_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise ArchonixError(f"cannot read {spec_path}: {exc}") from exc
     if spec_path.suffix.lower() in {".yaml", ".yml"}:
         try:
             import yaml  # type: ignore[import-untyped]

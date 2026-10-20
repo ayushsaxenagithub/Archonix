@@ -17,7 +17,7 @@ severity in `source`.
 | `bandit` | `bandit -r . -f json -q -x <globs>` | 0 none · 1 issues · 2 error | none | none | real 1.9.4 + fixtures |
 | `vulture` | `vulture . --min-confidence 60 --exclude <globs>` | 0 none · 1 invalid input · 2 bad args · 3 dead code | none | none | real 2.16 + fixtures |
 | `pytest` | `pytest -q -p no:cacheprovider --junitxml=<artifact>` | 0 pass · 1 failures · 2 interrupted · 3 internal · 4 usage · 5 no tests | if tests use it | whatever the tests do; JUnit XML in the artifact dir | real 9.1.1 + fixtures |
-| `gitleaks` | `gitleaks detect --no-git --source . --no-banner --redact --report-format json --report-path <artifact> --exit-code 1` | 0 none · 1 leaks · other error | none | report file in artifact dir | fixtures only (format from v8 docs) |
+| `gitleaks` | `gitleaks detect --no-git --source . --no-banner --redact --report-format json --report-path <artifact> --exit-code 1` | 0 none · 1 leaks · other error | none | report file in artifact dir | real 8.30.1 + fixtures |
 | `semgrep-local` | `semgrep scan --json --metrics=off --disable-version-check --quiet --config <.semgrep.yml\|.semgrep> …` | 0 done · 1 findings (with `--error`) · 2–8 errors | none expected with local rules | semgrep's own cache | fixtures only |
 | `semgrep-registry` | as above with `--config p/default` | as above | downloads rules | cache | fixtures only |
 | `npm-audit` | `npm audit --json` (root `package-lock.json`) | 0 none · 1 vulns *or* error (distinguished by JSON `error`) | sends dependency tree to the registry | npm cache/logs | fixtures only |
