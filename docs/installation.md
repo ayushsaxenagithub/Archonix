@@ -3,13 +3,21 @@
 ## Requirements
 
 - Python **3.11 or newer** (uses the standard-library `tomllib`). CI tests 3.11–3.13.
-- One runtime dependency: `jsonschema` (≥ 4.18).
+- Runtime dependencies: `jsonschema` (≥ 4.18) and `referencing` (≥ 0.28.4).
 - Optional tools Archonix can drive: ruff, bandit, vulture, pytest, gitleaks, semgrep,
   npm. None are required; missing tools are reported as skipped.
 
 ## Install the CLI
 
-From a clone (no package has been published to PyPI):
+From PyPI, once a release has been published there (check
+<https://pypi.org/project/archonix/>):
+
+```bash
+pipx install archonix      # or: uv tool install archonix
+archonix --version
+```
+
+From a clone (always available):
 
 ```bash
 git clone https://github.com/ayushsaxenagithub/Archonix.git

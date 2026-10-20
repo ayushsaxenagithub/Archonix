@@ -18,6 +18,9 @@ Thanks for helping. Archonix values small, evidence-backed changes. New here? St
 
 ## Development setup
 
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) (for example
+`pipx install uv` or `brew install uv`), then:
+
 ```bash
 uv sync                 # creates .venv with dev tools (pytest, ruff, mypy, bandit, vulture)
 uv run pytest           # full suite; real-tool integration tests skip when a tool is missing

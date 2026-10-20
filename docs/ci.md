@@ -20,13 +20,22 @@ vulnerability databases, so it runs weekly, on manual dispatch, and on pull requ
 change `pyproject.toml` or `uv.lock`, rather than gating every pull request on an external
 service.
 
+## `.github/workflows/release.yml`
+
+Runs only when a GitHub release is published (PyPI) or on manual dispatch (TestPyPI).
+It checks the tag against the package version and changelog, builds, runs
+`twine check --strict`, smoke-tests the wheel, and uploads through trusted publishing.
+`id-token: write` is granted only to the two publish jobs, which run in the `pypi` /
+`testpypi` environments. See [releasing.md](releasing.md).
+
 ## `.github/dependabot.yml`
 
 Weekly version-update pull requests for the pinned GitHub Actions and the uv lockfile.
 
 ## What CI does not do
 
-- No publishing, deployment or release creation.
+- No publishing except `release.yml`, which runs only on a published GitHub release or a
+  manual TestPyPI dispatch; no deployment.
 - No external link checking (it would make results depend on third-party sites); internal
   links are checked offline by the test suite.
 - semgrep and npm audit adapters are not exercised against real tools (fixture tests only).

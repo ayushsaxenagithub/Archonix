@@ -28,7 +28,7 @@ Status labels:
 | ruff / bandit / vulture adapters | Tested + real | |
 | pytest adapter (JUnit) | Tested + real | requires `--allow-repo-code` |
 | gitleaks adapter | Tested + real | verified with gitleaks 8.30.1 locally and in the CI `secrets` job |
-| semgrep (local rules / registry) adapters | Implemented, unverified here | semgrep not installed |
+| semgrep (local rules / registry) adapters | Verified manually with real semgrep 1.182.0; fixture tests in CI | findings, clean, invalid rules and registry (network) checked by hand; no automated real-tool test yet. Semgrep tolerates some syntax errors without reporting them |
 | npm audit adapter | Implemented, unverified here | network-dependent; not run |
 | Release readiness (configurable policy) | Tested | |
 | Inventory-derived Mermaid diagram | Tested | relationships labelled verified/inferred |
@@ -47,5 +47,6 @@ Status labels:
 | CI: lint, types, tests, build smoke, markdownlint, gitleaks history scan | Configured; hosted runs recorded in GitHub Actions | see docs/ci.md |
 | CI: dependency audit (pip-audit over uv.lock) | Configured (weekly / on dependency change); verified locally | network-dependent |
 | Offline internal Markdown link check | Tested | external links are not checked |
+| PyPI packaging (metadata, `twine check --strict`, isolated pipx install) | Verified locally; release workflow configured | not yet published; trusted-publisher setup is manual (docs/releasing.md) |
 | Sandboxing of launched tools | Unsupported | use containers/VMs |
 | Hosted service, telemetry, extra AI API | Unsupported by design | |
