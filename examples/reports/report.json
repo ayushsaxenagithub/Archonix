@@ -1,0 +1,705 @@
+{
+  "kind": "workflow-report",
+  "schema_version": "0.1",
+  "example": true,
+  "report_id": "RPT-7ef44d9f9d45",
+  "workflow": "audit",
+  "generated_at": "2026-10-20T21:29:45Z",
+  "generator": {
+    "name": "archonix",
+    "version": "0.1.0"
+  },
+  "scope": {
+    "root": "examples/python-service",
+    "mode": "audit",
+    "requested_checks": [
+      "ruff",
+      "bandit",
+      "vulture",
+      "pytest"
+    ]
+  },
+  "repository": {
+    "vcs": "none",
+    "revision": null,
+    "branch": null,
+    "dirty": null,
+    "notes": [
+      "not a Git repository; no revision recorded"
+    ]
+  },
+  "policy": {
+    "permissions": {
+      "source_writes": false,
+      "artifact_writes": true,
+      "repo_code": true,
+      "external_tools": true,
+      "network": false,
+      "dependency_install": false,
+      "shared_environment": false,
+      "destructive": false
+    },
+    "sources": {
+      "permissions.artifact_writes": "mode:audit",
+      "permissions.dependency_install": "mode:audit",
+      "permissions.destructive": "mode:audit",
+      "permissions.external_tools": "mode:audit",
+      "permissions.network": "mode:audit",
+      "permissions.repo_code": "command line",
+      "permissions.shared_environment": "mode:audit",
+      "permissions.source_writes": "mode:audit"
+    },
+    "ignored_settings": []
+  },
+  "inventory_summary": {
+    "languages": [
+      "Python"
+    ],
+    "ecosystems": [
+      "python"
+    ],
+    "detections": [
+      "api-spec: OpenAPI",
+      "auth: JWT (PyJWT)",
+      "cache: Redis client",
+      "container: Docker",
+      "database: PostgreSQL client",
+      "framework: Flask",
+      "lint: Ruff",
+      "queue: Celery",
+      "test: pytest"
+    ]
+  },
+  "executions": [
+    {
+      "id": "exec-ruff",
+      "check_id": "ruff",
+      "tool": "ruff",
+      "tool_version": "0.17.1",
+      "argv": [
+        "ruff",
+        "check",
+        "--output-format",
+        "json",
+        "--no-cache",
+        "--no-fix",
+        "--extend-exclude",
+        ".git,.hg,.svn,node_modules,.venv,venv,env,__pycache__,.mypy_cache,.pytest_cache,.ruff_cache,.tox,.nox,.cache,dist,build,.next,.nuxt,.turbo,coverage,htmlcov,.idea,.vscode,target,vendor,.gradle,.terraform,.archonix,*.egg-info",
+        "."
+      ],
+      "cwd": "examples/python-service",
+      "started_at": "2026-10-20T21:29:44Z",
+      "duration_seconds": 0.038,
+      "exit_code": 1,
+      "status": "completed",
+      "outcome": "findings",
+      "outcome_detail": "4 finding(s)",
+      "stdout": {
+        "excerpt": "[\n  {\n    \"cell\": null,\n    \"code\": \"S105\",\n    \"end_location\": {\n      \"column\": 50,\n      \"row\": 6\n    },\n    \"filename\": \"examples/python-service/app/ops.py\",\n    \"fix\": null,\n    \"location\": {\n      \"column\": 21,\n      \"row\": 6\n    },\n    \"message\": \"Possible hardcoded password assigned to: \\\"DATABASE_PASSWORD\\\"\",\n    \"name\": \"hardcoded-password-string\",\n    \"noqa_row\": 6,\n    \"severity\": \"error\",\n    \"url\": \"https://docs.astral.sh/ruff/rules/hardcoded-password-string\"\n  },\n  {\n    \"cell\": null,\n    \"code\": \"S602\",\n    \"end_location\": {\n      \"column\": 27,\n      \"row\": 11\n    },\n    \"filename\": \"examples/python-service/app/ops.py\",\n    \"fix\": null,\n    \"location\": {\n      \"column\": 12,\n      \"row\": 11\n    },\n    \"message\": \"`subprocess` call with `shell=True` identified, security issue\",\n    \"name\": \"subprocess-popen-with-shell-equals-true\",\n    \"noqa_row\": 11,\n    \"severity\": \"error\",\n    \"url\": \"https://docs.astral.sh/ruff/rules/subprocess-popen-with-shell-equals-true\"\n  },\n  {\n    \"cell\": null,\n    \"code\": \"S101\",\n    \"end_location\": {\n      \"column\": 11,\n      \"row\": 9\n    },\n    \"filename\": \"examples/python-service/tests/test_pricing.py\",\n    \"fix\": null,\n    \"location\": {\n      \"column\": 5,\n      \"row\": 9\n    },\n    \"message\": \"Use of `assert` detected\",\n    \"name\": \"assert\",\n    \"noqa_row\": 9,\n    \"severity\": \"error\",\n    \"url\": \"https://docs.astral.sh/ruff/rules/assert\"\n  },\n  {\n    \"cell\": null,\n    \"code\": \"S101\",\n    \"end_location\": {\n      \"column\": 11,\n      \"row\": 13\n    },\n    \"filename\": \"examples/python-service/tests/test_pricing.py\",\n    \"fix\": null,\n    \"location\": {\n      \"column\": 5,\n      \"row\": 13\n    },\n    \"message\": \"Use of `assert` detected\",\n    \"name\": \"assert\",\n    \"noqa_row\": 13,\n    \"severity\": \"error\",\n    \"url\": \"https://docs.astral.sh/ruff/rules/assert\"\n  }\n]",
+        "bytes_total": 2080,
+        "truncated": false
+      },
+      "stderr": {
+        "excerpt": null,
+        "bytes_total": 0,
+        "truncated": false
+      },
+      "artifacts": [],
+      "redaction": {
+        "applied": true,
+        "replacements": 0
+      },
+      "test_totals": null,
+      "findings_count": 4,
+      "parse_limitations": [],
+      "requires": {
+        "external_tool": true,
+        "repo_code": false,
+        "network": false,
+        "writes_cache": false
+      }
+    },
+    {
+      "id": "exec-bandit",
+      "check_id": "bandit",
+      "tool": "bandit",
+      "tool_version": "1.9.4",
+      "argv": [
+        "bandit",
+        "-r",
+        ".",
+        "-f",
+        "json",
+        "-q",
+        "-x",
+        "*/.git/*,*/.hg/*,*/.svn/*,*/node_modules/*,*/.venv/*,*/venv/*,*/env/*,*/__pycache__/*,*/.mypy_cache/*,*/.pytest_cache/*,*/.ruff_cache/*,*/.tox/*,*/.nox/*,*/.cache/*,*/dist/*,*/build/*,*/.next/*,*/.nuxt/*,*/.turbo/*,*/coverage/*,*/htmlcov/*,*/.idea/*,*/.vscode/*,*/target/*,*/vendor/*,*/.gradle/*,*/.terraform/*,*/.archonix/*,*.egg-info"
+      ],
+      "cwd": "examples/python-service",
+      "started_at": "2026-10-20T21:29:44Z",
+      "duration_seconds": 0.132,
+      "exit_code": 1,
+      "status": "completed",
+      "outcome": "findings",
+      "outcome_detail": "5 finding(s)",
+      "stdout": {
+        "excerpt": "{\n  \"errors\": [],\n  \"generated_at\": \"2026-10-20T21:29:44Z\",\n  \"metrics\": {\n    \"./app/__init__.py\": {\n      \"CONFIDENCE.HIGH\": 0,\n      \"CONFIDENCE.LOW\": 0,\n      \"CONFIDENCE.MEDIUM\": 0,\n      \"CONFIDENCE.UNDEFINED\": 0,\n      \"SEVERITY.HIGH\": 0,\n      \"SEVERITY.LOW\": 0,\n      \"SEVERITY.MEDIUM\": 0,\n      \"SEVERITY.UNDEFINED\": 0,\n      \"loc\": 1,\n      \"nosec\": 0,\n      \"skipped_tests\": 0\n    },\n    \"./app/ops.py\": {\n      \"CONFIDENCE.HIGH\": 2,\n      \"CONFIDENCE.LOW\": 0,\n      \"CONFIDENCE.MEDIUM\": 1,\n      \"CONFIDENCE.UNDEFINED\": 0,\n      \"SEVERITY.HIGH\": 1,\n      \"SEVERITY.LOW\": 2,\n      \"SEVERITY.MEDIUM\": 0,\n      \"SEVERITY.UNDEFINED\": 0,\n      \"loc\": 5,\n      \"nosec\": 0,\n      \"skipped_tests\": 0\n    },\n    \"./app/pricing.py\": {\n      \"CONFIDENCE.HIGH\": 0,\n      \"CONFIDENCE.LOW\": 0,\n      \"CONFIDENCE.MEDIUM\": 0,\n      \"CONFIDENCE.UNDEFINED\": 0,\n      \"SEVERITY.HIGH\": 0,\n      \"SEVERITY.LOW\": 0,\n      \"SEVERITY.MEDIUM\": 0,\n      \"SEVERITY.UNDEFINED\": 0,\n      \"loc\": 9,\n      \"nosec\": 0,\n      \"skipped_tests\": 0\n    },\n    \"./tests/conftest.py\": {\n      \"CONFIDENCE.HIGH\": 0,\n      \"CONFIDENCE.LOW\": 0,\n      \"CONFIDENCE.MEDIUM\": 0,\n      \"CONFIDENCE.UNDEFINED\": 0,\n      \"SEVERITY.HIGH\": 0,\n      \"SEVERITY.LOW\": 0,\n      \"SEVERITY.MEDIUM\": 0,\n      \"SEVERITY.UNDEFINED\": 0,\n      \"loc\": 3,\n      \"nosec\": 0,\n      \"skipped_tests\": 0\n    },\n    \"./tests/test_pricing.py\": {\n      \"CONFIDENCE.HIGH\": 2,\n      \"CONFIDENCE.LOW\": 0,\n      \"CONFIDENCE.MEDIUM\": 0,\n      \"CONFIDENCE.UNDEFINED\": 0,\n      \"SEVERITY.HIGH\": 0,\n      \"SEVERITY.LOW\": 2,\n      \"SEVERITY.MEDIUM\": 0,\n      \"SEVERITY.UNDEFINED\": 0,\n      \"loc\": 10,\n      \"nosec\": 0,\n      \"skipped_tests\": 0\n    },\n    \"_totals\": {\n      \"CONFIDENCE.HIGH\": 4,\n      \"CONFIDENCE.LOW\": 0,\n      \"CONFIDENCE.MEDIUM\": 1,\n      \"CONFIDENCE.UNDEFINED\": 0,\n      \"SEVERITY.HIGH\": 1,\n      \"SEVERITY.LOW\": 4,\n      \"SEVERITY.MEDIUM\": 0,\n      \"SEVERITY.UNDEFINED\": 0,\n      \"loc\": 28,\n      \"nosec\": 0,\n      \"skipped_tests\": 0\n    }\n  },\n  \"results\": [\n    {\n      \"code\": \"2 \\n3 import subprocess\\n4 \\n\",\n      \"col_offset\": 0,\n      \"end_col_offset\": 17,\n      \"filename\": \"./app/ops.py\",\n      \"issue_confidence\": \"HIGH\",\n      \"issue_cwe\": {\n        \"id\": 78,\n        \"link\": \"https://cwe.mitre.org/data/definitions/78.html\"\n      },\n      \"issue_severity\": \"LOW\",\n      \"issue_text\": \"Consider possible security implications associated with the subprocess module.\",\n      \"line_number\": 3,\n      \"line_range\": [\n        3\n      ],\n      \"more_info\": \"https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b404-import-subprocess\",\n      \"test_id\": \"B404\",\n      \"test_name\": \"blacklist\"\n    },\n    {\n      \"code\": \"5 # Synthetic, obviously fake credential for the example.\\n6 DATABASE_PASSWORD = \\\"[REDACTED]\\\"\\n7 \\n\",\n      \"col_offset\": 20,\n      \"end_col_offset\": 49,\n      \"filename\": \"./app/ops.py\",\n      \"issue_confidence\": \"MEDIUM\",\n      \"issue_cwe\": {\n        \"id\": 259,\n        \"link\": \"https://cwe.mitre.org/data/definitions/259.html\"\n      },\n      \"issue_severity\": \"LOW\",\n      \"issue_text\": \"Possible hardcoded password: '[REDACTED]'\",\n      \"line_number\": 6,\n      \"line_range\": [\n        6\n      ],\n      \"more_info\": \"https://bandit.readthedocs.io/en/1.9.4/plugins/b105_hardcoded_password_string.html\",\n      \"test_id\": \"B105\",\n      \"test_name\": \"hardcoded_password_string\"\n    },\n    {\n      \"code\": \"10     # B602/S602: shell=True with interpolated input -> command injection risk.\\n11     return subprocess.call(\\\"ping -c 1 \\\" + host, shell=True)\\n\",\n      \"col_offset\": 11,\n      \"end_col_offset\": 59,\n      \"filename\": \"./app/ops.py\",\n      \"issue_confidence\": \"HIGH\",\n      \"issue_cwe\": {\n        \"id\": 78,\n        \"link\": \"https://cwe.mitre.org/data/definitions/78.html\"\n      },\n      \"issue_severity\": \"HIGH\",\n      \"issue_text\": \"subprocess call with shell=True identified, security issue.\",\n      \"line_number\": 11,\n      \"line_range\": [\n        11\n  ",
+        "bytes_total": 5750,
+        "truncated": true
+      },
+      "stderr": {
+        "excerpt": null,
+        "bytes_total": 0,
+        "truncated": false
+      },
+      "artifacts": [],
+      "redaction": {
+        "applied": true,
+        "replacements": 5
+      },
+      "test_totals": null,
+      "findings_count": 5,
+      "parse_limitations": [],
+      "requires": {
+        "external_tool": true,
+        "repo_code": false,
+        "network": false,
+        "writes_cache": false
+      }
+    },
+    {
+      "id": "exec-vulture",
+      "check_id": "vulture",
+      "tool": "vulture",
+      "tool_version": "2.16",
+      "argv": [
+        "vulture",
+        ".",
+        "--min-confidence",
+        "60",
+        "--exclude",
+        "*/.git/*,*/.hg/*,*/.svn/*,*/node_modules/*,*/.venv/*,*/venv/*,*/env/*,*/__pycache__/*,*/.mypy_cache/*,*/.pytest_cache/*,*/.ruff_cache/*,*/.tox/*,*/.nox/*,*/.cache/*,*/dist/*,*/build/*,*/.next/*,*/.nuxt/*,*/.turbo/*,*/coverage/*,*/htmlcov/*,*/.idea/*,*/.vscode/*,*/target/*,*/vendor/*,*/.gradle/*,*/.terraform/*,*/.archonix/*,*.egg-info"
+      ],
+      "cwd": "examples/python-service",
+      "started_at": "2026-10-20T21:29:44Z",
+      "duration_seconds": 0.04,
+      "exit_code": 3,
+      "status": "completed",
+      "outcome": "findings",
+      "outcome_detail": "3 finding(s)",
+      "stdout": {
+        "excerpt": "app/ops.py:6: unused variable 'DATABASE_PASSWORD' (60% confidence)\napp/ops.py:9: unused function 'ping' (60% confidence)\napp/pricing.py:13: unused function 'legacy_rounding' (60% confidence)\n",
+        "bytes_total": 191,
+        "truncated": false
+      },
+      "stderr": {
+        "excerpt": null,
+        "bytes_total": 0,
+        "truncated": false
+      },
+      "artifacts": [],
+      "redaction": {
+        "applied": true,
+        "replacements": 0
+      },
+      "test_totals": null,
+      "findings_count": 3,
+      "parse_limitations": [],
+      "requires": {
+        "external_tool": true,
+        "repo_code": false,
+        "network": false,
+        "writes_cache": false
+      }
+    },
+    {
+      "id": "exec-pytest",
+      "check_id": "pytest",
+      "tool": "pytest",
+      "tool_version": "9.1.1",
+      "argv": [
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--junitxml=/var/folders/c0/_c37y8zn2lv8w7y1fwl_1_ww0000gn/T/archonix-pytest-cg5vis3o/pytest-junit.xml"
+      ],
+      "cwd": "examples/python-service",
+      "started_at": "2026-10-20T21:29:44Z",
+      "duration_seconds": 0.123,
+      "exit_code": 0,
+      "status": "completed",
+      "outcome": "clean",
+      "outcome_detail": "3 passed, 0 skipped",
+      "stdout": {
+        "excerpt": "...                                                                      [100%]\n3 passed in 0.01s\n",
+        "bytes_total": 98,
+        "truncated": false
+      },
+      "stderr": {
+        "excerpt": null,
+        "bytes_total": 0,
+        "truncated": false
+      },
+      "artifacts": [],
+      "redaction": {
+        "applied": true,
+        "replacements": 0
+      },
+      "test_totals": {
+        "total": 3,
+        "failed": 0,
+        "skipped": 0,
+        "errored": 0,
+        "passed": 3
+      },
+      "findings_count": 0,
+      "parse_limitations": [],
+      "requires": {
+        "external_tool": true,
+        "repo_code": true,
+        "network": false,
+        "writes_cache": true
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "ARX-31037a45378a1cb8",
+      "category": "security",
+      "title": "B602 subprocess_popen_with_shell_equals_true: subprocess call with shell=True identified, security issue.",
+      "message": "subprocess call with shell=True identified, security issue.",
+      "severity": "high",
+      "confidence": "high",
+      "source": {
+        "kind": "scanner",
+        "tool": "bandit",
+        "tool_version": "1.9.4",
+        "check_id": "bandit",
+        "rule_id": "B602",
+        "original_severity": "HIGH",
+        "original_confidence": "HIGH"
+      },
+      "location": {
+        "path": "app/ops.py",
+        "start_line": 11,
+        "end_line": null,
+        "start_column": 11,
+        "symbol": null
+      },
+      "evidence": "10     # B602/S602: shell=True with interpolated input -> command injection risk.\n11     return subprocess.call(\"ping -c 1 \" + host, shell=True)\n",
+      "exploitability": null,
+      "remediation": null,
+      "verification_status": "scanner-reported",
+      "references": [
+        "https://bandit.readthedocs.io/en/1.9.4/plugins/b602_subprocess_popen_with_shell_equals_true.html",
+        "https://cwe.mitre.org/data/definitions/78.html"
+      ],
+      "related_ids": [
+        "ARX-1cc90bf34bce190f"
+      ],
+      "occurrences": 1
+    },
+    {
+      "id": "ARX-3dd1669aaf66da6a",
+      "category": "security",
+      "title": "S105: Possible hardcoded password assigned to: \"DATABASE_PASSWORD\"",
+      "message": "Possible hardcoded password assigned to: \"DATABASE_PASSWORD\"",
+      "severity": "medium",
+      "confidence": "high",
+      "source": {
+        "kind": "scanner",
+        "tool": "ruff",
+        "tool_version": "0.17.1",
+        "check_id": "ruff",
+        "rule_id": "S105",
+        "original_severity": null,
+        "original_confidence": null
+      },
+      "location": {
+        "path": "app/ops.py",
+        "start_line": 6,
+        "end_line": 6,
+        "start_column": 21,
+        "symbol": null
+      },
+      "evidence": null,
+      "exploitability": null,
+      "remediation": null,
+      "verification_status": "scanner-reported",
+      "references": [
+        "https://docs.astral.sh/ruff/rules/hardcoded-password-string"
+      ],
+      "related_ids": [
+        "ARX-ea9f6b84a5c204cf",
+        "ARX-8ef3be49c6338bb0"
+      ],
+      "occurrences": 1
+    },
+    {
+      "id": "ARX-1cc90bf34bce190f",
+      "category": "security",
+      "title": "S602: `subprocess` call with `shell=True` identified, security issue",
+      "message": "`subprocess` call with `shell=True` identified, security issue",
+      "severity": "medium",
+      "confidence": "high",
+      "source": {
+        "kind": "scanner",
+        "tool": "ruff",
+        "tool_version": "0.17.1",
+        "check_id": "ruff",
+        "rule_id": "S602",
+        "original_severity": null,
+        "original_confidence": null
+      },
+      "location": {
+        "path": "app/ops.py",
+        "start_line": 11,
+        "end_line": 11,
+        "start_column": 12,
+        "symbol": null
+      },
+      "evidence": null,
+      "exploitability": null,
+      "remediation": null,
+      "verification_status": "scanner-reported",
+      "references": [
+        "https://docs.astral.sh/ruff/rules/subprocess-popen-with-shell-equals-true"
+      ],
+      "related_ids": [
+        "ARX-31037a45378a1cb8"
+      ],
+      "occurrences": 1
+    },
+    {
+      "id": "ARX-85db76d6492bd7d5",
+      "category": "security",
+      "title": "S101: Use of `assert` detected",
+      "message": "Use of `assert` detected",
+      "severity": "medium",
+      "confidence": "high",
+      "source": {
+        "kind": "scanner",
+        "tool": "ruff",
+        "tool_version": "0.17.1",
+        "check_id": "ruff",
+        "rule_id": "S101",
+        "original_severity": null,
+        "original_confidence": null
+      },
+      "location": {
+        "path": "tests/test_pricing.py",
+        "start_line": 9,
+        "end_line": 9,
+        "start_column": 5,
+        "symbol": null
+      },
+      "evidence": null,
+      "exploitability": null,
+      "remediation": null,
+      "verification_status": "scanner-reported",
+      "references": [
+        "https://docs.astral.sh/ruff/rules/assert"
+      ],
+      "related_ids": [
+        "ARX-711cde12b127fda6"
+      ],
+      "occurrences": 1
+    },
+    {
+      "id": "ARX-a82ee3e4aeca07d8",
+      "category": "security",
+      "title": "S101: Use of `assert` detected",
+      "message": "Use of `assert` detected",
+      "severity": "medium",
+      "confidence": "high",
+      "source": {
+        "kind": "scanner",
+        "tool": "ruff",
+        "tool_version": "0.17.1",
+        "check_id": "ruff",
+        "rule_id": "S101",
+        "original_severity": null,
+        "original_confidence": null
+      },
+      "location": {
+        "path": "tests/test_pricing.py",
+        "start_line": 13,
+        "end_line": 13,
+        "start_column": 5,
+        "symbol": null
+      },
+      "evidence": null,
+      "exploitability": null,
+      "remediation": null,
+      "verification_status": "scanner-reported",
+      "references": [
+        "https://docs.astral.sh/ruff/rules/assert"
+      ],
+      "related_ids": [
+        "ARX-a86cb7afae5ddda9"
+      ],
+      "occurrences": 1
+    },
+    {
+      "id": "ARX-5729952f9a1924bf",
+      "category": "security",
+      "title": "B404 blacklist: Consider possible security implications associated with the subprocess module.",
+      "message": "Consider possible security implications associated with the subprocess module.",
+      "severity": "low",
+      "confidence": "high",
+      "source": {
+        "kind": "scanner",
+        "tool": "bandit",
+        "tool_version": "1.9.4",
+        "check_id": "bandit",
+        "rule_id": "B404",
+        "original_severity": "LOW",
+        "original_confidence": "HIGH"
+      },
+      "location": {
+        "path": "app/ops.py",
+        "start_line": 3,
+        "end_line": null,
+        "start_column": 0,
+        "symbol": null
+      },
+      "evidence": "2 \n3 import subprocess\n4 \n",
+      "exploitability": null,
+      "remediation": null,
+      "verification_status": "scanner-reported",
+      "references": [
+        "https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b404-import-subprocess",
+        "https://cwe.mitre.org/data/definitions/78.html"
+      ],
+      "related_ids": [],
+      "occurrences": 1
+    },
+    {
+      "id": "ARX-ea9f6b84a5c204cf",
+      "category": "security",
+      "title": "B105 hardcoded_password_string: Possible hardcoded password: '[REDACTED]'",
+      "message": "Possible hardcoded password: '[REDACTED]'",
+      "severity": "low",
+      "confidence": "medium",
+      "source": {
+        "kind": "scanner",
+        "tool": "bandit",
+        "tool_version": "1.9.4",
+        "check_id": "bandit",
+        "rule_id": "B105",
+        "original_severity": "LOW",
+        "original_confidence": "MEDIUM"
+      },
+      "location": {
+        "path": "app/ops.py",
+        "start_line": 6,
+        "end_line": null,
+        "start_column": 20,
+        "symbol": null
+      },
+      "evidence": "5 # Synthetic, obviously fake credential for the example.\n6 DATABASE_PASSWORD = \"[REDACTED]\"\n7 \n",
+      "exploitability": null,
+      "remediation": null,
+      "verification_status": "scanner-reported",
+      "references": [
+        "https://bandit.readthedocs.io/en/1.9.4/plugins/b105_hardcoded_password_string.html",
+        "https://cwe.mitre.org/data/definitions/259.html"
+      ],
+      "related_ids": [
+        "ARX-3dd1669aaf66da6a",
+        "ARX-8ef3be49c6338bb0"
+      ],
+      "occurrences": 1
+    },
+    {
+      "id": "ARX-711cde12b127fda6",
+      "category": "security",
+      "title": "B101 assert_used: Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "message": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "severity": "low",
+      "confidence": "high",
+      "source": {
+        "kind": "scanner",
+        "tool": "bandit",
+        "tool_version": "1.9.4",
+        "check_id": "bandit",
+        "rule_id": "B101",
+        "original_severity": "LOW",
+        "original_confidence": "HIGH"
+      },
+      "location": {
+        "path": "tests/test_pricing.py",
+        "start_line": 9,
+        "end_line": null,
+        "start_column": 4,
+        "symbol": null
+      },
+      "evidence": "8 def test_discount_rounds_half_up():\n9     assert apply_discount(Decimal(\"10.005\"), 0) == Decimal(\"10.01\")\n10 \n",
+      "exploitability": null,
+      "remediation": null,
+      "verification_status": "scanner-reported",
+      "references": [
+        "https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html",
+        "https://cwe.mitre.org/data/definitions/703.html"
+      ],
+      "related_ids": [
+        "ARX-85db76d6492bd7d5"
+      ],
+      "occurrences": 1
+    },
+    {
+      "id": "ARX-a86cb7afae5ddda9",
+      "category": "security",
+      "title": "B101 assert_used: Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "message": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "severity": "low",
+      "confidence": "high",
+      "source": {
+        "kind": "scanner",
+        "tool": "bandit",
+        "tool_version": "1.9.4",
+        "check_id": "bandit",
+        "rule_id": "B101",
+        "original_severity": "LOW",
+        "original_confidence": "HIGH"
+      },
+      "location": {
+        "path": "tests/test_pricing.py",
+        "start_line": 13,
+        "end_line": null,
+        "start_column": 4,
+        "symbol": null
+      },
+      "evidence": "12 def test_discount_applies_percent():\n13     assert apply_discount(Decimal(\"200.00\"), 25) == Decimal(\"150.00\")\n14 \n",
+      "exploitability": null,
+      "remediation": null,
+      "verification_status": "scanner-reported",
+      "references": [
+        "https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html",
+        "https://cwe.mitre.org/data/definitions/703.html"
+      ],
+      "related_ids": [
+        "ARX-a82ee3e4aeca07d8"
+      ],
+      "occurrences": 1
+    },
+    {
+      "id": "ARX-8ef3be49c6338bb0",
+      "category": "dead-code",
+      "title": "unused variable 'DATABASE_PASSWORD'",
+      "message": "unused variable 'DATABASE_PASSWORD' (60% confidence)",
+      "severity": "info",
+      "confidence": "low",
+      "source": {
+        "kind": "scanner",
+        "tool": "vulture",
+        "tool_version": "2.16",
+        "check_id": "vulture",
+        "rule_id": "unused variable",
+        "original_severity": null,
+        "original_confidence": "60%"
+      },
+      "location": {
+        "path": "app/ops.py",
+        "start_line": 6,
+        "end_line": null,
+        "start_column": null,
+        "symbol": null
+      },
+      "evidence": null,
+      "exploitability": null,
+      "remediation": "Confirm there are no dynamic, framework or external references before removing.",
+      "verification_status": "scanner-reported",
+      "references": [],
+      "related_ids": [
+        "ARX-3dd1669aaf66da6a",
+        "ARX-ea9f6b84a5c204cf"
+      ],
+      "occurrences": 1
+    },
+    {
+      "id": "ARX-10c862a5e7eca4c2",
+      "category": "dead-code",
+      "title": "unused function 'ping'",
+      "message": "unused function 'ping' (60% confidence)",
+      "severity": "info",
+      "confidence": "low",
+      "source": {
+        "kind": "scanner",
+        "tool": "vulture",
+        "tool_version": "2.16",
+        "check_id": "vulture",
+        "rule_id": "unused function",
+        "original_severity": null,
+        "original_confidence": "60%"
+      },
+      "location": {
+        "path": "app/ops.py",
+        "start_line": 9,
+        "end_line": null,
+        "start_column": null,
+        "symbol": null
+      },
+      "evidence": null,
+      "exploitability": null,
+      "remediation": "Confirm there are no dynamic, framework or external references before removing.",
+      "verification_status": "scanner-reported",
+      "references": [],
+      "related_ids": [],
+      "occurrences": 1
+    },
+    {
+      "id": "ARX-0227e113d187dd86",
+      "category": "dead-code",
+      "title": "unused function 'legacy_rounding'",
+      "message": "unused function 'legacy_rounding' (60% confidence)",
+      "severity": "info",
+      "confidence": "low",
+      "source": {
+        "kind": "scanner",
+        "tool": "vulture",
+        "tool_version": "2.16",
+        "check_id": "vulture",
+        "rule_id": "unused function",
+        "original_severity": null,
+        "original_confidence": "60%"
+      },
+      "location": {
+        "path": "app/pricing.py",
+        "start_line": 13,
+        "end_line": null,
+        "start_column": null,
+        "symbol": null
+      },
+      "evidence": null,
+      "exploitability": null,
+      "remediation": "Confirm there are no dynamic, framework or external references before removing.",
+      "verification_status": "scanner-reported",
+      "references": [],
+      "related_ids": [],
+      "occurrences": 1
+    }
+  ],
+  "skipped": [],
+  "limitations": [
+    "Automated checks cover only what the selected tools and rules detect; absence of findings is not proof of correctness or security.",
+    "Scanner-reported findings are unverified until reviewed (see verification_status)."
+  ],
+  "next_actions": [
+    "Triage findings: confirm or mark false-positive, then remediate verified issues starting with the highest severity."
+  ],
+  "summary": {
+    "checks_planned": 4,
+    "checks_run": 4,
+    "clean": 1,
+    "with_findings": 3,
+    "failed": 0,
+    "not_run": 0,
+    "findings_by_severity": {
+      "high": 1,
+      "medium": 4,
+      "low": 4,
+      "info": 3
+    }
+  }
+}

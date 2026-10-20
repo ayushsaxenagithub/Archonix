@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:archonix:schema:config:0.1",
+  "title": "Archonix configuration file (TOML)",
+  "description": "Shape of archonix.toml, the user config file and --config files. Repository-controlled files may only restrict permissions and may not define check arguments; see docs/configuration.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "exclude": {"type": "array", "items": {"type": "string"}},
+        "max_files": {"type": "integer", "minimum": 1},
+        "max_file_bytes": {"type": "integer", "minimum": 1}
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "timeout_seconds": {"type": "number", "exclusiveMinimum": 0, "maximum": 86400},
+        "max_output_bytes": {"type": "integer", "minimum": 1024},
+        "env_passthrough": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_writes": {"type": "boolean"},
+        "artifact_writes": {"type": "boolean"},
+        "repo_code": {"type": "boolean"},
+        "external_tools": {"type": "boolean"},
+        "network": {"type": "boolean"},
+        "dependency_install": {"type": "boolean"},
+        "shared_environment": {"type": "boolean"},
+        "destructive": {"type": "boolean"}
+      }
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sensitive_env_names": {"type": "array", "items": {"type": "string"}},
+        "extra_patterns": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {"type": "boolean"},
+          "timeout_seconds": {"type": "number", "exclusiveMinimum": 0, "maximum": 86400},
+          "extra_args": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    }
+  }
+}

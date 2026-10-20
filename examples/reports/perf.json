@@ -1,0 +1,63 @@
+{
+  "kind": "performance-report",
+  "schema_version": "0.1",
+  "generated_at": "2026-10-20T21:29:46Z",
+  "revision": null,
+  "environment": "local example server",
+  "methodology": {
+    "type": "smoke",
+    "requests_per_endpoint": 120,
+    "concurrency": 2,
+    "warmup_requests": 2,
+    "timeout_seconds": 5.0,
+    "percentile_method": "nearest-rank over successful responses",
+    "reliability_rule": "a percentile p is reliable only when samples x (1 - p) >= 5 (p95 needs >= 100, p99 >= 500)"
+  },
+  "target": {
+    "base_url": "http://127.0.0.1:53059",
+    "loopback": true
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/health",
+      "samples": 120,
+      "errors": 0,
+      "timeouts": 0,
+      "status_codes": {
+        "200": 120
+      },
+      "duration_seconds": 0.034,
+      "throughput_rps": 3480.06,
+      "latency_ms": {
+        "min": 0.332,
+        "mean": 0.563,
+        "max": 1.313,
+        "p50": {
+          "value": 0.566,
+          "reliable": true
+        },
+        "p95": {
+          "value": 0.741,
+          "reliable": true
+        },
+        "p99": {
+          "value": 1.224,
+          "reliable": false
+        }
+      },
+      "threshold": {
+        "p95_ms": 250.0,
+        "max_error_rate": null,
+        "result": "pass"
+      }
+    }
+  ],
+  "limitations": [
+    "Smoke measurement only: small sample, single client host, no capacity or reliability claim. Use a load-testing tool for load evidence.",
+    "Errors count transport failures, timeouts and 5xx responses; 4xx responses are listed under status codes.",
+    "Throughput is bounded by the configured client concurrency, not server capacity.",
+    "Redirects are recorded and not followed; proxies from the environment are ignored."
+  ],
+  "example": true
+}

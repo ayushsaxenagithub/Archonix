@@ -1,0 +1,136 @@
+"""Integration tests that run real tools. Each is skipped when its tool is not installed.
+
+Run only these with: pytest -m integration
+"""
+
+from __future__ import annotations
+
+import json
+import shutil
+import subprocess
+import threading
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+
+import pytest
+from conftest import REPO_ROOT
+
+from archonix.cli import main
+from archonix.perf import k6_script
+
+pytestmark = pytest.mark.integration
+
+
+def needs(*tools: str) -> pytest.MarkDecorator:
+    missing = [t for t in tools if shutil.which(t) is None]
+    return pytest.mark.skipif(bool(missing), reason=f"not installed: {', '.join(missing)}")
+
+
+@pytest.fixture
+def service(tmp_path: Path) -> Path:
+    dest = tmp_path / "python-service"
+    shutil.copytree(REPO_ROOT / "examples" / "python-service", dest)
+    return dest
+
+
+def run_report(root: Path, out: Path, checks: str, *extra: str) -> dict:
+    code = main(
+        [
+            "check",
+            "run",
+            str(root),
+            "--mode",
+            "audit",
+            "--checks",
+            checks,
+            "--out-dir",
+            str(out),
+            *extra,
+        ]
+    )
+    assert code == 0
+    return json.loads((out / "report.json").read_text())
+
+
+@needs("ruff", "bandit", "vulture")
+def test_real_static_tools_on_example(service: Path, tmp_path: Path) -> None:
+    report = run_report(service, tmp_path / "out", "ruff,bandit,vulture")
+    ex = {e["check_id"]: e for e in report["executions"]}
+    assert all(e["status"] == "completed" for e in ex.values())
+    assert {e["outcome"] for e in ex.values()} == {"findings"}
+    assert all(e["tool_version"] for e in ex.values())
+    rules = {(f["source"]["tool"], f["source"]["rule_id"]) for f in report["findings"]}
+    assert ("bandit", "B602") in rules and ("ruff", "S602") in rules
+    assert ("vulture", "unused function") in rules
+    secret = "example-not-a-real-password"
+    assert secret not in (tmp_path / "out" / "report.json").read_text()
+    assert secret not in "".join(
+        p.read_text() for p in (tmp_path / "out" / "artifacts").rglob("*") if p.is_file()
+    )
+
+
+@needs("pytest")
+def test_real_pytest_on_example(service: Path, tmp_path: Path) -> None:
+    report = run_report(service, tmp_path / "out", "pytest", "--allow-repo-code")
+    ex = report["executions"][0]
+    assert ex["outcome"] == "clean"
+    assert ex["test_totals"] == {"total": 3, "passed": 3, "failed": 0, "skipped": 0, "errored": 0}
+    (service / "tests" / "test_broken.py").write_text("def test_broken():\n    assert 1 == 2\n")
+    report = run_report(service, tmp_path / "out2", "pytest", "--allow-repo-code")
+    assert report["executions"][0]["outcome"] == "tests-failed"
+    assert report["executions"][0]["test_totals"]["failed"] == 1
+
+
+@needs("git")
+def test_real_git_revision_and_dirty_state(
+    service: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    git = ["git", "-c", "user.name=Archonix Test", "-c", "user.email=test@example.invalid"]
+    subprocess.run([*git, "init", "-q", "-b", "main"], cwd=service, check=True)
+    subprocess.run([*git, "add", "."], cwd=service, check=True)
+    subprocess.run([*git, "commit", "-q", "-m", "init"], cwd=service, check=True)
+    sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=service, check=True, capture_output=True, text=True
+    ).stdout.strip()
+    assert main(["inventory", str(service), "--format", "json", "--allow-tools"]) == 0
+    repo = json.loads(capsys.readouterr().out)["repository"]
+    assert repo["revision"] == sha and repo["dirty"] is False
+    (service / "new.txt").write_text("x")
+    assert main(["inventory", str(service), "--format", "json", "--allow-tools"]) == 0
+    assert json.loads(capsys.readouterr().out)["repository"]["dirty"] is True
+
+
+@needs("k6")
+def test_generated_k6_script_runs(tmp_path: Path) -> None:
+    (tmp_path / "health").write_text("ok")
+
+    class Quiet(SimpleHTTPRequestHandler):
+        def __init__(self, *a: object, **kw: object) -> None:
+            super().__init__(*a, directory=str(tmp_path), **kw)  # type: ignore[arg-type]
+
+        def log_message(self, *args: object) -> None:
+            pass
+
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), Quiet)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    try:
+        script = tmp_path / "load.js"
+        script.write_text(
+            k6_script(
+                f"http://127.0.0.1:{httpd.server_address[1]}",
+                ["/health"],
+                vus=1,
+                duration="2s",
+                p95_ms=1000,
+                max_error_rate=0.01,
+            )
+        )
+        result = subprocess.run(
+            ["k6", "run", "--quiet", "--no-usage-report", str(script)],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        assert result.returncode == 0, result.stderr[-2000:]
+    finally:
+        httpd.shutdown()

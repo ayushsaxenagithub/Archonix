@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:archonix:schema:workflow-report:0.1",
+  "title": "Archonix workflow report",
+  "description": "Machine-readable record of a workflow run: scope, repository state, effective policy, executions, normalized findings, skipped checks and limitations.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "schema_version", "report_id", "workflow", "generated_at", "generator", "scope", "repository", "policy", "executions", "findings", "skipped", "limitations", "next_actions", "summary"],
+  "properties": {
+    "kind": {"const": "workflow-report"},
+    "schema_version": {"const": "0.1"},
+    "example": {"type": "boolean"},
+    "report_id": {"type": "string"},
+    "workflow": {"type": "string"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "generator": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {"name": {"type": "string"}, "version": {"type": "string"}}
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root", "mode", "requested_checks"],
+      "properties": {
+        "root": {"type": "string"},
+        "mode": {"enum": ["discovery", "implementation", "audit"]},
+        "requested_checks": {"type": ["array", "null"], "items": {"type": "string"}}
+      }
+    },
+    "repository": {"$ref": "urn:archonix:schema:inventory:0.1#/$defs/repository"},
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["permissions", "sources"],
+      "properties": {
+        "permissions": {"type": "object", "additionalProperties": {"type": "boolean"}},
+        "sources": {"type": "object", "additionalProperties": {"type": "string"}},
+        "ignored_settings": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "inventory_summary": {
+      "type": ["object", "null"],
+      "properties": {
+        "languages": {"type": "array", "items": {"type": "string"}},
+        "ecosystems": {"type": "array", "items": {"type": "string"}},
+        "detections": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "executions": {"type": "array", "items": {"$ref": "urn:archonix:schema:execution-record:0.1"}},
+    "findings": {"type": "array", "items": {"$ref": "urn:archonix:schema:finding:0.1"}},
+    "skipped": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["check_id", "reason"],
+        "properties": {"check_id": {"type": "string"}, "reason": {"type": "string"}}
+      }
+    },
+    "limitations": {"type": "array", "items": {"type": "string"}},
+    "next_actions": {"type": "array", "items": {"type": "string"}},
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checks_planned", "checks_run", "clean", "with_findings", "failed", "not_run", "findings_by_severity"],
+      "properties": {
+        "checks_planned": {"type": "integer", "minimum": 0},
+        "checks_run": {"type": "integer", "minimum": 0},
+        "clean": {"type": "integer", "minimum": 0},
+        "with_findings": {"type": "integer", "minimum": 0},
+        "failed": {"type": "integer", "minimum": 0},
+        "not_run": {"type": "integer", "minimum": 0},
+        "findings_by_severity": {"type": "object", "additionalProperties": {"type": "integer"}}
+      }
+    }
+  }
+}

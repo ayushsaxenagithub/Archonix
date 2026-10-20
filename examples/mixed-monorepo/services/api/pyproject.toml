@@ -1,0 +1,7 @@
+[project]
+name = "example-api"
+version = "0.0.1"
+dependencies = ["fastapi>=0.110", "sqlalchemy>=2", "redis>=5"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

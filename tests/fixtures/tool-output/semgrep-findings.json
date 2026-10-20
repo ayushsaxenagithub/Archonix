@@ -1,0 +1,30 @@
+{
+  "version": "1.90.0",
+  "results": [
+    {
+      "check_id": "python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
+      "path": "app/ops.py",
+      "start": {"line": 11, "col": 12, "offset": 250},
+      "end": {"line": 11, "col": 60, "offset": 298},
+      "extra": {
+        "message": "Found 'subprocess' function 'call' with 'shell=True'.",
+        "severity": "ERROR",
+        "metadata": {
+          "cwe": ["CWE-78: Improper Neutralization of Special Elements used in an OS Command"],
+          "confidence": "MEDIUM",
+          "references": ["https://stackoverflow.com/questions/3172470"]
+        },
+        "lines": "requires login"
+      }
+    },
+    {
+      "check_id": "local.rules.no-print",
+      "path": "app/pricing.py",
+      "start": {"line": 3, "col": 1},
+      "end": {"line": 3, "col": 10},
+      "extra": {"message": "print found", "severity": "INFO", "metadata": {}}
+    }
+  ],
+  "errors": [{"type": "Syntax error", "path": "broken.py"}],
+  "paths": {"scanned": ["app/ops.py", "app/pricing.py"]}
+}

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:archonix:schema:finding:0.1",
+  "title": "Archonix normalized finding",
+  "description": "One finding from a scanner, a reviewer, or an agent. Severity and confidence are independent. Original tool identifiers are preserved in `source`.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "category", "title", "severity", "confidence", "source", "verification_status"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._-]{2,63}$"},
+    "category": {
+      "enum": ["security", "secrets", "dependency", "lint", "type", "dead-code", "test-failure", "performance", "reliability", "other"]
+    },
+    "title": {"type": "string", "minLength": 1},
+    "message": {"type": ["string", "null"]},
+    "severity": {"enum": ["critical", "high", "medium", "low", "info", "unknown"]},
+    "confidence": {"enum": ["high", "medium", "low", "unknown"]},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {"enum": ["scanner", "reviewer", "agent"]},
+        "tool": {"type": ["string", "null"]},
+        "tool_version": {"type": ["string", "null"]},
+        "check_id": {"type": ["string", "null"]},
+        "rule_id": {"type": ["string", "null"]},
+        "original_severity": {"type": ["string", "null"]},
+        "original_confidence": {"type": ["string", "null"]}
+      }
+    },
+    "location": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": {"type": "string"},
+        "start_line": {"type": ["integer", "null"], "minimum": 0},
+        "end_line": {"type": ["integer", "null"], "minimum": 0},
+        "start_column": {"type": ["integer", "null"], "minimum": 0},
+        "symbol": {"type": ["string", "null"]}
+      }
+    },
+    "evidence": {"type": ["string", "null"]},
+    "exploitability": {"type": ["string", "null"]},
+    "remediation": {"type": ["string", "null"]},
+    "verification_status": {"enum": ["scanner-reported", "verified", "hypothesis", "false-positive", "fixed"]},
+    "references": {"type": "array", "items": {"type": "string"}},
+    "related_ids": {"type": "array", "items": {"type": "string"}},
+    "occurrences": {"type": "integer", "minimum": 1}
+  }
+}
