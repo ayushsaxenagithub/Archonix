@@ -1,0 +1,30 @@
+name: Good first issue (maintainers)
+description: A small, well-scoped task for a new contributor. Used by maintainers to file starter tasks.
+labels: ["good first issue"]
+body:
+  - type: textarea
+    id: task
+    attributes:
+      label: Task
+      description: One concrete change, written for someone new to the codebase.
+    validations:
+      required: true
+  - type: textarea
+    id: pointers
+    attributes:
+      label: Where to look
+      description: Files, functions and existing tests to start from.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Definition of done
+      description: Observable behaviour and the tests that should prove it.
+    validations:
+      required: true
+  - type: input
+    id: effort
+    attributes:
+      label: Expected effort
+      placeholder: "e.g. 1-3 hours"

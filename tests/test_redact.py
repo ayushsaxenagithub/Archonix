@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from archonix.redact import MASK, Redactor
@@ -29,6 +31,12 @@ def test_json_escaped_assignment() -> None:
     text = '{"code": "DB_PASSWORD = \\"hunter-two-22\\""}'
     redacted, n = Redactor().redact(text)
     assert "hunter-two-22" not in redacted and n == 1
+
+
+def test_json_quoted_keys() -> None:
+    value = "synthetic-" + "key-12345"  # assembled at runtime; never a literal credential
+    redacted, n = Redactor().redact(json.dumps({"api_key": value, "name": "demo"}))
+    assert redacted == '{"api_key": "[REDACTED]", "name": "demo"}' and n == 1
 
 
 def test_plain_words_after_secret_like_names_are_kept() -> None:

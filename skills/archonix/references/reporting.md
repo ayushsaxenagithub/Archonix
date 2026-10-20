@@ -32,7 +32,7 @@ overlaps instead of merging them.
 
 ## Completion report structure
 
-```
+```text
 ## Summary            — outcome in two or three sentences
 ## Changes            — files/modules touched and why (requirement IDs)
 ## Verification       — commands run, exit codes, counts; label each Verified/Skipped

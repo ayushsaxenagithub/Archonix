@@ -75,7 +75,19 @@ def build_env(
     names = set(BASE_ENV_PASSTHROUGH) | set(passthrough)
     env = {k: v for k, v in source.items() if k in names}
     env.update(extra or {})
+    if "PATH" in env:
+        env["PATH"] = safe_path(env["PATH"])
     return env
+
+
+def safe_path(value: str) -> str:
+    """Drop empty and relative PATH entries.
+
+    An entry such as ``.`` or ``bin`` resolves against the working directory, which is
+    usually the repository being inspected, so a repository could otherwise supply its
+    own ``ruff`` or ``git`` executable.
+    """
+    return os.pathsep.join(p for p in value.split(os.pathsep) if p and os.path.isabs(p))
 
 
 def _drain(pipe: IO[bytes], sink: CapturedStream, limit: int) -> None:
@@ -123,7 +135,9 @@ def run(
     argv = [str(a) for a in argv]
     started = utc_now()
     t0 = time.monotonic()
-    executable = shutil.which(argv[0], path=env.get("PATH")) if argv else None
+    executable = shutil.which(argv[0], path=safe_path(env.get("PATH", ""))) if argv else None
+    if executable is not None:
+        executable = os.path.abspath(executable)
     if executable is None:
         return RunResult(
             argv,

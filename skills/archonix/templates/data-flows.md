@@ -3,6 +3,7 @@
 Last updated: {{date}}
 
 ## Entities
+
 ```mermaid
 erDiagram
   ACCOUNT ||--o{ ORDER : places
@@ -12,5 +13,6 @@ erDiagram
 |---|---|---|---|---|
 
 ## Flows
+
 | Flow | From | To | Data | Trigger | Status (verified/inferred) |
 |---|---|---|---|---|---|

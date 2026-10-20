@@ -80,5 +80,11 @@ def load_json(path: Path) -> Any:
         return json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError as exc:
         raise ValidationFailed(f"{path}: file not found") from exc
+    except IsADirectoryError as exc:
+        raise ValidationFailed(f"{path}: is a directory, expected a JSON file") from exc
+    except UnicodeDecodeError as exc:
+        raise ValidationFailed(f"{path}: not UTF-8 text") from exc
+    except OSError as exc:
+        raise ValidationFailed(f"{path}: cannot read: {exc.strerror or exc}") from exc
     except json.JSONDecodeError as exc:
         raise ValidationFailed(f"{path}: invalid JSON: {exc}") from exc

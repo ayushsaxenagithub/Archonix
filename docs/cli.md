@@ -34,6 +34,7 @@ Output options where shown: `--format`, `--out FILE` (refuses to overwrite unles
 ## Commands
 
 ### `archonix inventory [PATH]`
+
 Static inventory and stack detection. Reads files; never imports or executes repository
 code. `--format md|json`.
 
@@ -42,16 +43,20 @@ archonix inventory . --format json --out inventory.json
 ```
 
 ### `archonix tools [--versions]`
+
 Which supported tools are on PATH. `--versions` runs each tool's version command.
 
 ### `archonix config show [PATH]`
+
 Effective configuration, the source of every value, and ignored repository settings.
 
 ### `archonix requirements validate FILE`
+
 Schema plus semantic rules: unique IDs, known and acyclic dependencies, acceptance
 criteria for approved work, critical-question gate, passing evidence for `verified`.
 
 ### `archonix requirements matrix FILE [--report REPORT ...]`
+
 Acceptance traceability matrix. `check:<id>` evidence is resolved against the reports.
 
 ```bash
@@ -59,12 +64,15 @@ archonix requirements matrix docs/requirements.json --report .archonix/run/repor
 ```
 
 ### `archonix check list`
+
 Built-in checks, their requirements and verification status.
 
 ### `archonix check plan [PATH] [--checks a,b]`
+
 What would run and why, or why not. Executes nothing.
 
 ### `archonix check run [PATH] [--checks a,b] [--out-dir DIR]`
+
 Runs the permitted checks and builds a workflow report. Without `--out-dir` the report is
 printed (`--format md|json`); with it, `report.json`, `report.md` and `artifacts/` are
 written there (the directory must be new or empty unless `--overwrite`).
@@ -78,16 +86,20 @@ archonix check run . --mode audit --allow-repo-code --checks pytest --format jso
 ```
 
 ### `archonix validate FILE [--schema NAME]`
+
 Validate a JSON document; the schema is inferred from `kind` when omitted.
 
 ### `archonix render FILE [--out FILE]`
+
 Render a workflow report, readiness assessment, performance report, inventory or ledger
 as Markdown.
 
 ### `archonix schema list`
+
 List bundled schemas.
 
 ### `archonix readiness assess [--report R ...] [--ledger L] [--policy P]`
+
 Policy-driven verdict: `ready` (exit 0), `not-ready` (1) or `incomplete` (4).
 
 ```bash
@@ -96,6 +108,7 @@ archonix readiness assess --policy examples/readiness-policy.toml \
 ```
 
 ### `archonix architecture diagram [PATH] [--python-package DIR] [--depth N]`
+
 Mermaid system-context diagram from the inventory, or a module import graph for a Python
 package (parsed with `ast`). `--format md|mermaid`.
 
@@ -105,6 +118,7 @@ archonix architecture diagram . --python-package src/archonix --format mermaid
 ```
 
 ### `archonix docs list` / `archonix docs init [PATH] --set NAME`
+
 Project document templates for one workflow. Dry run unless `--apply`; writing also needs
 `--allow-source-writes`; existing files are never overwritten.
 
@@ -113,10 +127,12 @@ archonix docs init . --set discovery --apply --allow-source-writes
 ```
 
 ### `archonix perf endpoints SPEC`
+
 List endpoints from an OpenAPI JSON (or YAML with PyYAML installed) and flag GET/HEAD
 endpoints without required parameters as smoke *candidates*.
 
 ### `archonix perf smoke --base-url URL --path P [...] --allow-network`
+
 Bounded GET/HEAD smoke measurement. Options: `--requests` (≤500), `--concurrency` (≤10),
 `--warmup` (≤20), `--timeout`, `--method GET|HEAD`, `--authorized-host HOST` (required
 for non-loopback), `--auth-header-env VAR`, `--p95-ms`, `--max-error-rate`, `--revision`,
@@ -127,13 +143,16 @@ archonix perf smoke --base-url http://127.0.0.1:8000 --path /health --requests 1
 ```
 
 ### `archonix perf k6-script --base-url URL --path P [...]`
+
 Generate a reviewable k6 scenario (`--vus`, `--duration`, `--p95-ms`, `--max-error-rate`,
 `--out`). Archonix never runs load tests itself.
 
 ### `archonix install` / `archonix uninstall`
+
 `--assistant {claude,codex,cursor}`, `--scope {user,project}`, `--project-dir DIR`,
 `--apply`. Dry run without `--apply`. See [installation.md](installation.md).
 
 ### `archonix skill validate [PATH]` / `archonix skill path`
+
 Validate a skill directory (frontmatter, name, description length, links, manifest
 integrity); print the bundled skill location.
