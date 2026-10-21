@@ -12,6 +12,7 @@ out without persisting credentials, and run on `pull_request` (never
 | `build` | `uv build`; installs the wheel into a fresh venv outside the checkout and runs the CLI, skill validation, inventory and an installer dry run | package download only |
 | `docs` | markdownlint-cli2 with `.markdownlint-cli2.jsonc` | action download only |
 | `secrets` | downloads gitleaks 8.30.1, verifies its SHA-256, scans the full Git history, then runs the real gitleaks adapter integration test | release download only |
+| `semgrep` | installs semgrep 1.182.0 with `uv tool install`, then runs the real `semgrep-local` adapter tests (findings, clean, invalid rules) with rules written into a synthetic repository | package download only; scans are offline |
 
 ## `.github/workflows/dependency-audit.yml`
 
@@ -39,7 +40,8 @@ Weekly version-update pull requests for the pinned GitHub Actions and the uv loc
   manual TestPyPI dispatch; no deployment.
 - No external link checking (it would make results depend on third-party sites); internal
   links are checked offline by the test suite.
-- semgrep and npm audit adapters are not exercised against real tools (fixture tests only).
+- `semgrep-registry` (needs the network) and `npm-audit` are not exercised against real
+  tools in CI (fixture tests only).
 - Windows is not in the matrix.
 
 ## Running the same checks locally

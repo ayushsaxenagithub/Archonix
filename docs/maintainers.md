@@ -10,6 +10,7 @@ A pull request is mergeable only when all of these pass in GitHub Actions
 - `build`: sdist + wheel, isolated-install smoke test
 - `docs`: markdownlint
 - `secrets`: gitleaks history scan and real gitleaks adapter test
+- `semgrep`: real semgrep-local adapter tests
 
 `Dependency audit` runs weekly and on dependency changes; a failure there blocks merging
 the dependency change that caused it and gets an issue otherwise.
