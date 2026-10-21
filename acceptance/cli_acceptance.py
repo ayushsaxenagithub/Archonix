@@ -638,6 +638,74 @@ class Suite:
             "present",
         )
 
+    def agent_context(self) -> None:
+        proj = self.repo("s5-agents", "python-service")
+        (proj / "docs").mkdir(exist_ok=True)
+        shutil.copy(
+            REPO / "examples" / "requirements" / "ledger.json", proj / "docs" / "requirements.json"
+        )
+        dry = self.arx("agents", "init", str(proj))
+        self.check(
+            "AC-12",
+            "S1",
+            "agents init is a dry run by default",
+            dry.returncode == 0 and not (proj / ".ai").exists(),
+            f"exit {dry.returncode}",
+        )
+        denied = self.arx("agents", "init", str(proj), "--apply")
+        self.check(
+            "AC-12",
+            "S1",
+            "writing needs --allow-source-writes",
+            denied.returncode == 3,
+            f"exit {denied.returncode}",
+        )
+        write = ["--apply", "--allow-source-writes"]
+        r = self.arx("agents", "init", str(proj), *write)
+        skill = "example-python-service-requirements"
+        self.check(
+            "AC-12",
+            "S1",
+            "init drafts instructions and a requirements skill",
+            r.returncode == 0
+            and (proj / ".ai" / "instructions.md").is_file()
+            and (proj / ".ai" / "skills" / skill / "SKILL.md").is_file(),
+            f"exit {r.returncode}",
+        )
+        r = self.arx("agents", "sync", str(proj), *write)
+        agents_md = proj / "AGENTS.md"
+        valid = all(
+            self.arx("skill", "validate", str(proj / base / skill)).returncode == 0
+            for base in (".claude/skills", ".agents/skills")
+        )
+        self.check(
+            "AC-12",
+            "S1",
+            "sync writes AGENTS.md, CLAUDE.md import and valid skills",
+            r.returncode == 0
+            and agents_md.is_file()
+            and "@AGENTS.md" in (proj / "CLAUDE.md").read_text()
+            and valid,
+            f"exit {r.returncode}, skills valid={valid}",
+        )
+        r = self.arx("agents", "sync", str(proj), "--check")
+        self.check(
+            "AC-12",
+            "S1",
+            "--check reports up to date after sync",
+            r.returncode == 0,
+            f"exit {r.returncode}",
+        )
+        agents_md.write_text(agents_md.read_text() + "hand edit\n")
+        r = self.arx("agents", "sync", str(proj), *write)
+        self.check(
+            "AC-12",
+            "S1",
+            "hand-edited output is protected",
+            r.returncode == 3 and agents_md.read_text().endswith("hand edit\n"),
+            f"exit {r.returncode}",
+        )
+
     def installer(self) -> None:
         home, proj = self.work / "home", self.work / "proj"
         proj.mkdir(exist_ok=True)
@@ -694,6 +762,7 @@ def main() -> int:
         suite.typescript_app,
         suite.mixed_monorepo,
         suite.unsupported_stack,
+        suite.agent_context,
         suite.installer,
     ):
         step()
