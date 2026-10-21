@@ -135,9 +135,28 @@ def test_timeout_kills_descendants_that_ignore_sigterm(tmp_path: Path) -> None:
     assert r.status == "timeout"
     assert time.monotonic() - t0 < 10
     pid = int(pid_file.read_text())
+    # A killed orphan is reaped asynchronously by its new parent (init); until then it is
+    # a zombie, which os.kill(pid, 0) still reports as existing. Dead or zombie both mean
+    # it is no longer running.
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline:
+        if not _running(pid):
+            return
+        time.sleep(0.1)
+    os.kill(pid, signal.SIGKILL)  # do not leak the process if the assertion fails
+    pytest.fail("descendant that ignores SIGTERM is still running after the timeout")
+
+
+def _running(pid: int) -> bool:
+    """True if the process exists and is not a zombie (POSIX `ps` is used for the state)."""
+    import os
+    import subprocess
+
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
-        return
-    os.kill(pid, signal.SIGKILL)  # do not leak the process if the assertion fails
-    pytest.fail("descendant that ignores SIGTERM survived the timeout")
+        return False
+    state = subprocess.run(
+        ["ps", "-o", "stat=", "-p", str(pid)], capture_output=True, text=True, check=False
+    ).stdout.strip()
+    return bool(state) and not state.startswith("Z")
