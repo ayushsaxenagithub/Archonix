@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from .base import Adapter, Context, ParseOutcome
+from .dependency_tools import OsvScannerAdapter
 from .python_tools import BanditAdapter, PytestAdapter, RuffAdapter, VultureAdapter
 from .security_tools import (
     GitleaksAdapter,
@@ -22,6 +23,7 @@ ADAPTERS: dict[str, Adapter] = {
         SemgrepLocalAdapter(),
         SemgrepRegistryAdapter(),
         NpmAuditAdapter(),
+        OsvScannerAdapter(),
     )
 }
 

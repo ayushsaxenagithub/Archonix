@@ -23,7 +23,7 @@
 
 ## Roadmap (not committed)
 
-1. Adapters: Trivy, OSV-Scanner, pip-audit, deptry, Knip, ESLint, mypy/tsc
+1. Adapters: Trivy, deptry, Knip, ESLint, mypy/tsc (OSV-Scanner added after 0.1.1; see CHANGELOG)
    (starter tasks in [good-first-issues.md](good-first-issues.md)).
 2. Verify the semgrep adapter against real tool runs in CI.
 3. JS/TS import graph using an established parser; framework route inventories.

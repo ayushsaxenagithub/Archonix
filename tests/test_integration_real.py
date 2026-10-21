@@ -154,3 +154,33 @@ def test_real_gitleaks_finds_synthetic_token_without_copying_it(tmp_path: Path) 
     (repo / "settings.py").write_text("GITHUB_TOKEN = None\n")
     clean = run_report(repo, tmp_path / "out2", "gitleaks")
     assert clean["executions"][0]["outcome"] == "clean"
+
+
+@needs("osv-scanner")
+@pytest.mark.skipif(
+    not __import__("os").environ.get("ARCHONIX_NETWORK_TESTS"),
+    reason="queries osv.dev; set ARCHONIX_NETWORK_TESTS=1 to run",
+)
+def test_real_osv_scanner_on_vulnerable_lockfile(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    (repo / "web").mkdir(parents=True)
+    lock = {
+        "name": "web",
+        "version": "1.0.0",
+        "lockfileVersion": 3,
+        "requires": True,
+        "packages": {
+            "": {"name": "web", "version": "1.0.0", "dependencies": {"lodash": "4.17.15"}},
+            # osv-scanner 2.7 skips entries without a registry "resolved" URL.
+            "node_modules/lodash": {
+                "version": "4.17.15",
+                "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.15.tgz",
+            },
+        },
+    }
+    (repo / "web" / "package-lock.json").write_text(json.dumps(lock))
+    report = run_report(repo, tmp_path / "out", "osv-scanner", "--allow-network")
+    ex = report["executions"][0]
+    assert (ex["status"], ex["outcome"], ex["exit_code"]) == ("completed", "findings", 1)
+    assert any(f["source"]["rule_id"] == "GHSA-29mw-wpgm-hmr9" for f in report["findings"])
+    assert "--no-call-analysis=all" in ex["argv"]

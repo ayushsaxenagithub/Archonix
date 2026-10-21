@@ -43,6 +43,7 @@ gated, and the CLI never sets them on.
 | ruff, bandit, vulture, gitleaks, semgrep-local | no (reads files and configuration) | no |
 | semgrep-registry | no | yes (downloads rules) |
 | npm-audit | no (no install scripts) | yes (sends the dependency tree) |
+| osv-scanner | no (reads lockfiles; call analysis disabled) | yes (sends package names and versions) |
 | pytest | **yes** (tests, `conftest.py`, plugins) | only if the tests do |
 
 "Does not execute repository code" means the tool parses rather than runs the code. The
