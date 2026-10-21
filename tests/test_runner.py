@@ -107,3 +107,37 @@ def test_explicit_cwd(tmp_path: Path) -> None:
         max_output_bytes=4096,
     )
     assert Path(r.stdout.text().strip()).resolve() == tmp_path.resolve()
+
+
+def test_timeout_kills_descendants_that_ignore_sigterm(tmp_path: Path) -> None:
+    """A cooperative parent exits on SIGTERM; its child ignores SIGTERM and must not survive."""
+    import os
+    import signal
+
+    if os.name != "posix":
+        pytest.skip("process groups")
+    pid_file = tmp_path / "child.pid"
+    child = tmp_path / "child.py"
+    child.write_text(
+        "import os, signal, time\n"
+        "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+        f"open({str(pid_file)!r}, 'w').write(str(os.getpid()))\n"
+        "time.sleep(60)\n"
+    )
+    parent = tmp_path / "parent.py"
+    parent.write_text(
+        "import subprocess, sys, time\n"
+        f"subprocess.Popen([sys.executable, {str(child)!r}])\n"
+        "time.sleep(60)\n"
+    )
+    t0 = time.monotonic()
+    r = run([PY, str(parent)], tmp_path, env=build_env(), timeout=1, max_output_bytes=1024)
+    assert r.status == "timeout"
+    assert time.monotonic() - t0 < 10
+    pid = int(pid_file.read_text())
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return
+    os.kill(pid, signal.SIGKILL)  # do not leak the process if the assertion fails
+    pytest.fail("descendant that ignores SIGTERM survived the timeout")

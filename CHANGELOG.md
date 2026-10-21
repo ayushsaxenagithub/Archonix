@@ -9,6 +9,10 @@ behaviour; patch versions are fixes).
 
 ### Fixed
 
+- Timeout cleanup sends SIGKILL to the whole process group after the grace period even
+  when the direct child already exited, so descendants that ignore SIGTERM no longer
+  survive a timeout.
+
 - Skill: explicit rule for where reports and artifacts go (named location, else
   `.archonix/<run>/` when repository changes are allowed, else a fresh temporary
   directory, else stdout), and to state the path used. Found in acceptance testing:
