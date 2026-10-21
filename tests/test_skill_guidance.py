@@ -37,3 +37,21 @@ def test_skill_entry_point_shows_test_verification() -> None:
     # Running repository code stays behind explicit authorization.
     assert all("authorized" in line for line in lines)
     assert "**not run**" in text
+
+
+def test_report_location_rule_is_explicit() -> None:
+    """Acceptance finding F2: told not to modify files, an assistant invented an output
+    directory three levels above the repository. The skill must state the rule."""
+    policy = (SKILL / "references" / "execution-policy.md").read_text()
+    section = policy.split("## Where reports and artifacts go", 1)[1].split("\n## ", 1)[0]
+    for required in (
+        ".archonix/<run-name>/",
+        "mktemp -d",
+        "not to modify files",
+        "Never invent",
+        "--format md",
+        "state the path",
+    ):
+        assert required in section, required
+    for doc in ("SKILL.md", "references/release-readiness.md"):
+        assert "Where reports and artifacts go" in (SKILL / doc).read_text(), doc

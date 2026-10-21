@@ -9,6 +9,12 @@ behaviour; patch versions are fixes).
 
 ### Fixed
 
+- Skill: explicit rule for where reports and artifacts go (named location, else
+  `.archonix/<run>/` when repository changes are allowed, else a fresh temporary
+  directory, else stdout), and to state the path used. Found in acceptance testing:
+  told not to modify files, an assistant invented a directory three levels above the
+  repository.
+
 - The `pytest` check sets `PYTHONDONTWRITEBYTECODE=1` for the test process only, so a run
   no longer leaves `__pycache__` directories in the repository (`.pytest_cache` was already
   disabled). Found in acceptance testing; nothing is deleted and other tools are unaffected.
