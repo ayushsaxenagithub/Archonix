@@ -71,6 +71,14 @@ jobs:
           /tmp/isolated/bin/archonix inventory "$GITHUB_WORKSPACE/examples/python-service" --format json > inv.json
           /tmp/isolated/bin/archonix validate inv.json
           /tmp/isolated/bin/archonix install --assistant claude --scope project --project-dir /tmp/proj
+      - name: Install real tools for the acceptance suite
+        run: uv sync --locked
+      # Acceptance criteria AC-1..AC-11 against the installed wheel (acceptance/README.md).
+      # Tools that are not installed here (e.g. gitleaks) are reported as SKIP.
+      - name: CLI acceptance suite
+        run: |
+          PATH="$GITHUB_WORKSPACE/.venv/bin:$PATH" python acceptance/cli_acceptance.py \
+            --archonix /tmp/isolated/bin/archonix --json-out acceptance-results.json
 
   docs:
     name: markdown lint

@@ -216,3 +216,35 @@ def test_cli_plan_executes_nothing(
     plan = json.loads(capsys.readouterr().out)
     assert next(c for c in plan["checks"] if c["check_id"] == "ruff")["action"] == "run"
     assert not marker.exists()
+
+
+def test_pytest_child_gets_no_bytecode_env_only(
+    make_repo: Callable[..., Path], fake_bin: Callable[..., Path], tmp_path: Path
+) -> None:
+    """Acceptance finding F3: test runs must not leave __pycache__ in the repository."""
+    import os
+
+    seen = tmp_path / "env-seen.txt"
+    script = fake_bin(
+        "pytest",
+        report_flag="--junitxml",
+        report=fixture_text("tool-output", "pytest-junit-pass.xml"),
+    )
+    original = script.read_text()
+    script.write_text(
+        original.replace(
+            "time.sleep(spec['sleep'])",
+            f"import os; open({str(seen)!r}, 'w')"
+            ".write(os.environ.get('PYTHONDONTWRITEBYTECODE', ''))"
+            "\ntime.sleep(spec['sleep'])",
+        )
+    )
+    fake_bin("ruff", stdout="[]")
+    root = make_repo(PY_REPO)
+    report = run_checks(root, ["pytest"], repo_code=True)
+    assert by_check(report)["pytest"]["outcome"] == "clean"
+    assert seen.read_text() == "1"
+    assert "PYTHONDONTWRITEBYTECODE" not in os.environ  # caller's environment untouched
+    seen.unlink()
+    run_checks(root, ["ruff"])  # other tools do not get the variable
+    assert not seen.exists()

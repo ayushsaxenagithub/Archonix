@@ -7,6 +7,8 @@ not a guarantee.
 
 1. Run the required checks on the release revision from a clean working tree:
    `archonix check run . --mode audit --allow-repo-code --out-dir .archonix/release`
+   (use a fresh temporary directory instead of `.archonix/` if the user asked you not to
+   modify files; see "Where reports and artifacts go" in `execution-policy.md`)
 2. Make sure the requirements ledger reflects verification (`verified` + evidence).
 3. Review open findings: mark `false-positive` or `fixed` with justification; do not
    silently drop them.

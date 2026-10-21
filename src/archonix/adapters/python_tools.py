@@ -264,9 +264,13 @@ class PytestAdapter(Adapter):
         4: "usage error",
         5: "no tests collected",
     }
+    # Keep the run from leaving __pycache__ directories in the repository; together with
+    # `-p no:cacheprovider` (no .pytest_cache). Applies to this child process only.
+    env = {"PYTHONDONTWRITEBYTECODE": "1"}
     notes = (
         "Runs the repository's tests, conftest.py and plugins: only for trusted code. "
-        "Tests may write files or use the network on their own."
+        "Bytecode and pytest caches are disabled for the run; tests may still write files "
+        "or use the network on their own."
     )
 
     def applies(self, inventory: dict[str, Any], root: Path) -> tuple[bool, str]:

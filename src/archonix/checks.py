@@ -246,7 +246,7 @@ def execute_plan(
             result = run(
                 plan.adapter.argv(ctx),
                 root,
-                env=env,
+                env={**env, **plan.adapter.env},
                 timeout=cfg.timeout_seconds or settings.timeout_seconds,
                 max_output_bytes=settings.max_output_bytes,
             )

@@ -7,7 +7,31 @@ behaviour; patch versions are fixes).
 
 ## [Unreleased]
 
+### Fixed
+
+- Skill: explicit rule for where reports and artifacts go (named location, else
+  `.archonix/<run>/` when repository changes are allowed, else a fresh temporary
+  directory, else stdout), and to state the path used. Found in acceptance testing:
+  told not to modify files, an assistant invented a directory three levels above the
+  repository.
+
+- The `pytest` check sets `PYTHONDONTWRITEBYTECODE=1` for the test process only, so a run
+  no longer leaves `__pycache__` directories in the repository (`.pytest_cache` was already
+  disabled). Found in acceptance testing; nothing is deleted and other tools are unaffected.
+
+- Skill: the bug-investigation and implementation workflows (and `SKILL.md`) now name the
+  CLI test-verification command (`archonix check run . --mode audit --allow-repo-code
+  --checks pytest`, only when authorized) and require reporting tests as **not run** with
+  the exact command otherwise. Found in acceptance testing with Claude Code: a correct
+  bug fix was left unverified because the bug workflow did not point to the permitted
+  CLI path. With the fix, the same task reproduced the bug and verified the fix.
+
 ### Added
+
+- Acceptance suites: `acceptance/cli_acceptance.py` (installed CLI on four scenario
+  repositories, criteria AC-1..AC-11; runs in CI) and `acceptance/claude_code.py` (opt-in
+  Claude Code run of four tasks with automatic, transcript-based scoring), plus a manual
+  procedure for Codex and Cursor. Results: `docs/acceptance/2026-10-21-results.md`.
 
 - `osv-scanner` check: dependency vulnerabilities from lockfiles and requirements files in
   any directory and many ecosystems (Python, npm, Go, Rust, Ruby, PHP, …). Requires

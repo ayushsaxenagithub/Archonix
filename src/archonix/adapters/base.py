@@ -43,6 +43,8 @@ class Adapter:
     requires: Requirements = Requirements()
     status: str = STATUS_TESTED_FIXTURES
     exit_codes: dict[int, str] = {}
+    # Extra environment variables for this tool's process only (never the caller's).
+    env: dict[str, str] = {}
     notes: str = ""
 
     def applies(self, inventory: dict[str, Any], root: Path) -> tuple[bool, str]:
@@ -64,6 +66,7 @@ class Adapter:
             "requires": self.requires.as_dict(),
             "status": self.status,
             "exit_codes": {str(k): v for k, v in self.exit_codes.items()},
+            "env": dict(self.env),
             "notes": self.notes,
         }
 
