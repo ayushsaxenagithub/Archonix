@@ -14,10 +14,11 @@ confidence, and only test running systems you are authorized to test.
 | `gitleaks` | secrets in working-tree files | tool |
 | `semgrep-local` | repository-committed Semgrep rules | tool |
 | `semgrep-registry` | Semgrep `p/default` registry rules | tool + network |
-| `npm-audit` | npm dependency advisories | tool + network |
+| `npm-audit` | npm dependency advisories (root lockfile) | tool + network |
+| `osv-scanner` | dependency advisories from lockfiles in any directory (Python, npm, Go, Rust, Ruby, PHP, …) | tool + network |
 
-Other maintained tools (manual workflow; no adapter in v0.1): Trivy (images, IaC,
-dependencies), OSV-Scanner, pip-audit, ecosystem audit tools, and OWASP ZAP only against
+Other maintained tools (manual workflow; no adapter yet): Trivy (images, IaC,
+dependencies), pip-audit, ecosystem audit tools, and OWASP ZAP only against
 authorized, isolated targets. Record their commands and outcomes the same way.
 
 ## 2. Manual review checklist

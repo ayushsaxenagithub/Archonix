@@ -21,6 +21,7 @@ severity in `source`.
 | `semgrep-local` | `semgrep scan --json --metrics=off --disable-version-check --quiet --config <.semgrep.yml\|.semgrep> …` | 0 done · 1 findings (with `--error`) · 2–8 errors | none expected with local rules | semgrep's own cache | fixtures + manual real run (1.182.0) |
 | `semgrep-registry` | as above with `--config p/default` | as above | downloads rules | cache | fixtures + manual real run (1.182.0) |
 | `npm-audit` | `npm audit --json` (root `package-lock.json`) | 0 none · 1 vulns *or* error (distinguished by JSON `error`) | sends dependency tree to the registry | npm cache/logs | fixtures only |
+| `osv-scanner` | `osv-scanner scan source --recursive --format json --no-call-analysis=all --verbosity error --x-exclude … .` | 0 none · 1 vulns · 127 error · 128 no package sources | sends package names/versions to osv.dev; may resolve unpinned manifests via deps.dev | none | real 2.7.0 + recorded fixtures |
 
 ## Interpretation details
 
@@ -38,6 +39,16 @@ severity in `source`.
   location and entropy.
 - **semgrep**: `ERROR`→high, `WARNING`→medium, `INFO`→low; `metadata.confidence` →
   confidence; `errors[]` marks the scan as partial.
+- **osv-scanner**: one finding per package × advisory group (OSV de-duplicates aliases
+  into groups); severity from the group's CVSS `max_severity` (≥ 9 critical, ≥ 7 high,
+  ≥ 4 medium, otherwise low), falling back to the GitHub database label, else `unknown`.
+  Confidence is `high` for versions pinned in a lockfile and `medium` for transitive
+  versions osv-scanner resolved itself. Fixed versions come only from ECOSYSTEM/SEMVER
+  ranges (never commit SHAs). Call analysis is disabled because Rust call analysis runs
+  build scripts. Known gaps: npm lockfile entries without a `resolved` registry URL are
+  skipped by osv-scanner; files ignored by `.gitignore` are not scanned; a repository
+  `osv-scanner.toml` can ignore advisories (reported as a limitation). It overlaps with
+  `npm-audit` for npm lockfiles; findings from both are kept separately.
 - **npm audit** (report v2): one finding per vulnerable package; `moderate`→medium;
   advisory URLs become references.
 

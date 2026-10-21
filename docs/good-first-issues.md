@@ -3,10 +3,11 @@
 Starter tasks drawn from real gaps in v0.1. Each is small, self-contained and has a clear
 test. Comment on (or open) a matching issue before starting so work is not duplicated.
 
-1. **pip-audit adapter.** Add `PipAuditAdapter` (`requires`: tool + network) that runs
-   `pip-audit -f json` and maps each vulnerability to a `dependency` finding. Start from
-   `NpmAuditAdapter` in `src/archonix/adapters/security_tools.py`; add fixtures for findings,
-   clean output and malformed JSON in `tests/fixtures/tool-output/`.
+1. **deptry adapter.** Add `DeptryAdapter` (`requires`: tool only; deptry parses imports
+   without running code) that runs `deptry . --json-output <artifact>` and maps unused,
+   missing and transitive dependency issues to `dead-code`/`dependency` findings. Start
+   from `OsvScannerAdapter` in `src/archonix/adapters/dependency_tools.py`; record fixtures
+   from a real run in `tests/fixtures/tool-output/`.
 2. **Strip ANSI colour codes from stored excerpts.** gitleaks writes coloured log lines to
    stderr, which end up in `executions[].stderr.excerpt`. Strip escape sequences in
    `checks._stream` and test it with a fake tool that prints colour codes.

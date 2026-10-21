@@ -15,10 +15,11 @@ out without persisting credentials, and run on `pull_request` (never
 
 ## `.github/workflows/dependency-audit.yml`
 
-`pip-audit` (pinned) over the exported `uv.lock`, runtime and dev groups. It queries
-vulnerability databases, so it runs weekly, on manual dispatch, and on pull requests that
-change `pyproject.toml` or `uv.lock`, rather than gating every pull request on an external
-service.
+`pip-audit` (pinned) over the exported `uv.lock`, runtime and dev groups, plus a job that
+installs a checksum-verified osv-scanner and runs the real osv-scanner adapter test
+(`ARCHONIX_NETWORK_TESTS=1`). Both query vulnerability databases, so the workflow runs
+weekly, on manual dispatch, and on pull requests that change dependencies or the OSV
+adapter, rather than gating every pull request on an external service.
 
 ## `.github/workflows/release.yml`
 

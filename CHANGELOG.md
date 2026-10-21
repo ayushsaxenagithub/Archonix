@@ -7,6 +7,13 @@ behaviour; patch versions are fixes).
 
 ## [Unreleased]
 
+### Added
+
+- `osv-scanner` check: dependency vulnerabilities from lockfiles and requirements files in
+  any directory and many ecosystems (Python, npm, Go, Rust, Ruby, PHP, …). Requires
+  `--allow-network`; call analysis is disabled so no build scripts run. Verified against
+  osv-scanner 2.7.0, with recorded fixtures and a scheduled real-tool CI job.
+
 ## [0.1.1] - unreleased
 
 First version intended for PyPI. **Upgrade from 0.1.0**: it contains installer and
