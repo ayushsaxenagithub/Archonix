@@ -26,6 +26,7 @@ DEFAULT_POLICY: dict[str, Any] = {
         "require_clean_worktree": True,
         "require_must_requirements_verified": True,
         "allow_unparsed_checks": False,
+        "allow_partial_scans": False,
     },
 }
 KNOWN_RULES = set(DEFAULT_POLICY["rules"])
@@ -64,6 +65,11 @@ def _rule(
 
 
 COUNT_KEYS = ("total", "passed", "failed", "skipped", "errored")
+
+
+def _partial(execution: dict[str, Any]) -> bool:
+    """True when the tool reported targets it could not analyse (coverage.complete=false)."""
+    return (execution.get("coverage") or {}).get("complete") is False
 
 
 def _tests_rule(executions: list[dict[str, Any]]) -> dict[str, Any]:
@@ -134,6 +140,8 @@ def assess(
             executions[e["check_id"]] = e
         findings += rep.get("findings", [])
     names = [n for n, _ in reports]
+    allow_partial = bool(rules_cfg.get("allow_partial_scans", False))
+    partial_scans = [e for e in executions.values() if _partial(e)]
 
     for check_id in rules_cfg.get("required_checks", []):
         e = executions.get(check_id)
@@ -162,6 +170,16 @@ def assess(
                     desc,
                     "unknown",
                     f"{e['status']}/{e['outcome']}: {e['outcome_detail']}",
+                )
+            )
+        elif _partial(e) and not allow_partial:
+            rules.append(
+                _rule(
+                    f"check:{check_id}",
+                    desc,
+                    "unknown",
+                    f"partial scan: {(e.get('coverage') or {}).get('detail') or 'incomplete'} "
+                    "(set allow_partial_scans = true to accept partial coverage)",
                 )
             )
         else:
@@ -203,6 +221,16 @@ def assess(
                     [f["id"] for f in blocking[:20]],
                 )
             )
+        elif partial_scans and not allow_partial:
+            rules.append(
+                _rule(
+                    "max-severity",
+                    desc,
+                    "unknown",
+                    "findings may be incomplete; partial scans: "
+                    + ", ".join(e["check_id"] for e in partial_scans),
+                )
+            )
         elif unknown_sev:
             rules.append(
                 _rule(
@@ -223,11 +251,15 @@ def assess(
             )
 
     if not rules_cfg.get("allow_unparsed_checks", True):
-        bad = [e for e in executions.values() if e["outcome"] in {"parse-error", "tool-error"}]
+        bad = [
+            e
+            for e in executions.values()
+            if e["outcome"] in {"parse-error", "tool-error"} or (_partial(e) and not allow_partial)
+        ]
         rules.append(
             _rule(
                 "no-unparsed-checks",
-                "every executed check produced interpretable output",
+                "every executed check produced interpretable, complete output",
                 "unknown" if bad else ("pass" if executions else "unknown"),
                 ", ".join(f"{e['check_id']}: {e['outcome_detail']}" for e in bad)
                 or ("all executed checks parsed" if executions else "no executions"),

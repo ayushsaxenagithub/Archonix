@@ -168,7 +168,15 @@ class BanditAdapter(Adapter):
         outcome = _finish(findings, skipped, result.exit_code == 1)
         errors = data.get("errors") or []
         if errors:
-            outcome.limitations.append(f"bandit could not analyse {len(errors)} file(s)")
+            names = sorted({str(e.get("filename", "?")) for e in errors if isinstance(e, dict)})
+            detail = f"bandit could not analyse {len(errors)} file(s)"
+            outcome.limitations.append(detail)
+            outcome.complete = False
+            outcome.coverage_detail = detail + (
+                f": {', '.join(relpath(n, ctx.root) for n in names[:5])}" if names else ""
+            )
+        elif outcome.outcome in {"clean", "findings"}:
+            outcome.complete = True
         return outcome
 
 

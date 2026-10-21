@@ -191,11 +191,19 @@ class _SemgrepBase(Adapter):
             )
         errors = data.get("errors") or []
         limitations = [f"semgrep reported {len(errors)} error(s) (partial scan)"] if errors else []
+        coverage = {
+            "complete": not errors,
+            "coverage_detail": f"semgrep reported {len(errors)} error(s)" if errors else None,
+        }
         if findings:
             return ParseOutcome(
-                "findings", f"{len(findings)} finding(s)", findings, limitations=limitations
+                "findings",
+                f"{len(findings)} finding(s)",
+                findings,
+                limitations=limitations,
+                **coverage,  # type: ignore[arg-type]
             )
-        return ParseOutcome("clean", "no findings reported", limitations=limitations)
+        return ParseOutcome("clean", "no findings reported", limitations=limitations, **coverage)  # type: ignore[arg-type]
 
 
 class SemgrepLocalAdapter(_SemgrepBase):

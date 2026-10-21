@@ -31,6 +31,10 @@ class ParseOutcome:
     findings: list[dict[str, Any]] = field(default_factory=list)
     test_totals: dict[str, int | None] | None = None
     limitations: list[str] = field(default_factory=list)
+    # Scan completeness: True = the tool reported analysing every target, False = it
+    # reported targets it could not analyse, None = the tool does not say.
+    complete: bool | None = None
+    coverage_detail: str | None = None
 
 
 class Adapter:

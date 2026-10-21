@@ -63,6 +63,13 @@
     },
     "findings_count": {"type": ["integer", "null"], "minimum": 0},
     "parse_limitations": {"type": "array", "items": {"type": "string"}},
+    "coverage": {
+      "description": "Optional. Scan completeness as reported by the tool: complete=false means some targets could not be analysed; null means the tool does not report it.",
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["complete", "detail"],
+      "properties": {"complete": {"type": ["boolean", "null"]}, "detail": {"type": ["string", "null"]}}
+    },
     "requires": {
       "type": "object",
       "additionalProperties": false,

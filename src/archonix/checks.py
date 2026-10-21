@@ -214,6 +214,14 @@ def _record(
         "test_totals": parsed.test_totals if parsed else None,
         "findings_count": len(parsed.findings) if parsed and outcome != "parse-error" else None,
         "parse_limitations": limitations,
+        "coverage": None
+        if parsed is None or outcome == "parse-error"
+        else {
+            "complete": parsed.complete,
+            "detail": redactor.redact(parsed.coverage_detail)[0]
+            if redactor is not None and parsed.coverage_detail
+            else parsed.coverage_detail,
+        },
         "requires": plan.adapter.requires.as_dict(),
     }
 
@@ -296,6 +304,8 @@ def execute_plan(
             )
             if parsed.outcome != "parse-error":
                 findings.extend(parsed.findings)
+            if parsed.complete is False:
+                parsed.detail += " (partial scan)"
             record = _record(
                 plan,
                 status="completed",

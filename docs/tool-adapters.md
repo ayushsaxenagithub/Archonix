@@ -29,7 +29,8 @@ severity in `source`.
   everything else is `lint`/`low`, confidence `high` (deterministic rules).
 - **bandit**: severity and confidence map directly from `issue_severity` /
   `issue_confidence`; CWE links and `more_info` become references; bandit's own `errors`
-  become report limitations.
+  mark the scan **partial** (`coverage.complete = false`, outcome detail
+  "(partial scan)") and are listed as limitations.
 - **vulture**: `info` severity; confidence `medium` for ≥ 90 %, else `low`. A vulture
   percentage expresses "no static reference", not proof of non-use.
 - **pytest**: totals from JUnit XML; each failure/error becomes a `test-failure` finding.
@@ -38,7 +39,7 @@ severity in `source`.
 - **gitleaks**: the matched secret text is never copied into the report; only rule,
   location and entropy.
 - **semgrep**: `ERROR`→high, `WARNING`→medium, `INFO`→low; `metadata.confidence` →
-  confidence; `errors[]` marks the scan as partial.
+  confidence; `errors[]` marks the scan as partial (`coverage.complete = false`).
 - **osv-scanner**: one finding per package × advisory group (OSV de-duplicates aliases
   into groups); severity from the group's CVSS `max_severity` (≥ 9 critical, ≥ 7 high,
   ≥ 4 medium, otherwise low), falling back to the GitHub database label, else `unknown`.

@@ -9,6 +9,14 @@ behaviour; patch versions are fixes).
 
 ### Fixed
 
+- Incomplete scans can no longer satisfy readiness. Execution records gain an optional
+  `coverage` field (`complete`, `detail`). bandit and semgrep set `complete: false` when
+  they report targets they could not analyse, and the outcome detail says "(partial
+  scan)". A required check with a partial scan, the `max_severity` rule and
+  `allow_unparsed_checks = false` all become `unknown` unless the policy sets the new
+  `allow_partial_scans = true`. Previously bandit skipping a syntax-invalid file produced
+  `clean` and a `ready` verdict.
+
 - Readiness `require_tests` no longer passes when every test was skipped. It now requires
   completed, parseable test runs with known and consistent counts and at least one
   executed test. Previously the total count, including skipped tests, was enough.
