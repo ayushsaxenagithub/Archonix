@@ -128,11 +128,43 @@ def _find_cycle(by_id: dict[str, dict[str, Any]]) -> list[str] | None:
     return None
 
 
-def traceability(ledger: dict[str, Any], reports: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """One row per acceptance criterion: linked evidence and whether it is present.
+# Machine-checkable outcome of a referenced check -> evidence result. "findings" needs a
+# human decision (a finding may or may not violate the criterion), so it is unknown.
+CHECK_OUTCOME_RESULT = {"clean": "pass", "tests-failed": "fail"}
 
-    Evidence references of the form ``check:<check_id>`` are resolved against the
-    supplied workflow reports; anything else is reported as recorded-but-unchecked.
+
+def _evidence_result(
+    e: dict[str, Any], executions: dict[str, dict[str, Any]]
+) -> tuple[str, str, str]:
+    """Return (result, basis, description) for one evidence entry.
+
+    ``check:<id>`` references are resolved against the supplied reports and the
+    resolved outcome decides the result; a recorded "fail" is never overridden by a
+    pass. Other references keep their recorded result but are labelled as recorded
+    assertions rather than verified execution evidence.
+    """
+    ref, recorded = e["reference"], e["result"]
+    if not ref.startswith("check:"):
+        return recorded, "recorded", f"{ref} (recorded {recorded}; not machine-checked)"
+    ex = executions.get(ref.removeprefix("check:"))
+    if ex is None:
+        return "unknown", "verified", f"{ref} -> not present in supplied reports"
+    if ex.get("status") != "completed":
+        resolved = "unknown"
+    else:
+        resolved = CHECK_OUTCOME_RESULT.get(ex.get("outcome", ""), "unknown")
+    result = "fail" if "fail" in (resolved, recorded) else resolved
+    note = "" if recorded == result else f"; ledger recorded {recorded}"
+    return result, "verified", f"{ref} -> {ex.get('status')}/{ex.get('outcome')}{note}"
+
+
+def traceability(ledger: dict[str, Any], reports: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """One row per acceptance criterion with its evidence and a conservative result.
+
+    Results: ``fail`` if any evidence fails, else ``unknown`` if any is unresolved,
+    else ``pass``; ``missing`` when no evidence is linked. ``basis`` says whether the
+    result rests on resolved check executions (``verified``), on recorded assertions
+    only (``recorded``), or both (``mixed``).
     """
     executions = {e["check_id"]: e for r in reports for e in r.get("executions", [])}
     rows = []
@@ -141,29 +173,14 @@ def traceability(ledger: dict[str, Any], reports: list[dict[str, Any]]) -> list[
         criteria = req["acceptance_criteria"] or [{"id": "—", "description": "(no criteria)"}]
         for ac in criteria:
             linked = [e for e in evidence if e.get("acceptance_criterion") in (ac["id"], None)]
-            resolved = []
-            for e in linked:
-                ref = e["reference"]
-                if ref.startswith("check:"):
-                    ex = executions.get(ref.removeprefix("check:"))
-                    resolved.append(
-                        f"{ref} -> "
-                        + (
-                            f"{ex['status']}/{ex['outcome']}"
-                            if ex
-                            else "not present in supplied reports"
-                        )
-                    )
-                else:
-                    resolved.append(f"{ref} ({e['result']}, not machine-checked)")
-            if not linked:
-                state = "missing"
-            elif all(e["result"] == "pass" for e in linked):
-                state = "pass"
-            elif any(e["result"] == "fail" for e in linked):
-                state = "fail"
+            judged = [_evidence_result(e, executions) for e in linked]
+            results = {r for r, _, _ in judged}
+            bases = {b for _, b, _ in judged}
+            if not judged:
+                state, basis = "missing", "none"
             else:
-                state = "unknown"
+                state = "fail" if "fail" in results else "unknown" if results - {"pass"} else "pass"
+                basis = bases.pop() if len(bases) == 1 else "mixed"
             rows.append(
                 {
                     "requirement": req["id"],
@@ -171,8 +188,9 @@ def traceability(ledger: dict[str, Any], reports: list[dict[str, Any]]) -> list[
                     "status": req["status"],
                     "criterion": ac["id"],
                     "method": req["verification"]["method"],
-                    "evidence": resolved,
+                    "evidence": [d for _, _, d in judged],
                     "result": state,
+                    "basis": basis,
                 }
             )
     return rows
@@ -182,13 +200,16 @@ def render_matrix(rows: list[dict[str, Any]]) -> str:
     out = [
         "# Acceptance traceability matrix",
         "",
-        "| Requirement | Priority | Status | Criterion | Method | Result | Evidence |",
-        "|---|---|---|---|---|---|---|",
+        "Basis: `verified` = resolved against supplied check executions; `recorded` = "
+        "assertion recorded in the ledger, not machine-checked.",
+        "",
+        "| Requirement | Priority | Status | Criterion | Method | Result | Basis | Evidence |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for r in rows:
         out.append(
             f"| {r['requirement']} | {r['priority']} | {r['status']} | {r['criterion']} | "
-            f"{r['method']} | {r['result']} | {'; '.join(r['evidence']) or '—'} |"
+            f"{r['method']} | {r['result']} | {r['basis']} | {'; '.join(r['evidence']) or '—'} |"
         )
     return "\n".join(out) + "\n"
 

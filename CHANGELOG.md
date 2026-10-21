@@ -9,6 +9,11 @@ behaviour; patch versions are fixes).
 
 ### Fixed
 
+- Traceability matrix resolves `check:<id>` evidence before assigning a result: missing
+  or unrun checks are `unknown` and failed tests are `fail`, even when the ledger records
+  `pass`. Previously the recorded value decided the result. Rows gain a `basis` field
+  (`verified`, `recorded`, `mixed`).
+
 - Retained artifacts are redacted and listed on every exit path of a check, including
   timeouts and adapter errors. Previously, a timed-out tool's report kept any secret it
   contained and was missing from the execution record. Artifacts that cannot be redacted

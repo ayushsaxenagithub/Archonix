@@ -156,3 +156,54 @@ def test_cli_validate_exit_codes(tmp_path: Path, capsys: pytest.CaptureFixture[s
     assert "unknown dependency REQ-404" in capsys.readouterr().err
     path.write_text("{not json")
     assert main(["requirements", "validate", str(path)]) == 1
+
+
+# --- Review issue 2: traceability reported "pass" for missing or failed evidence ------
+
+
+def _ledger(*evidence: dict[str, Any]) -> dict[str, Any]:
+    return doc(
+        req(
+            "REQ-1",
+            status="verified",
+            verification={"method": "automated-test", "evidence": list(evidence)},
+        )
+    )
+
+
+def _ex(outcome: str, status: str = "completed") -> dict[str, Any]:
+    return {"executions": [{"check_id": "pytest", "status": status, "outcome": outcome}]}
+
+
+CHECK_PASS = {"acceptance_criterion": "AC-1-1", "reference": "check:pytest", "result": "pass"}
+
+
+@pytest.mark.parametrize(
+    "reports, expected",
+    [
+        ([], "unknown"),  # evidence not supplied
+        ([_ex("tests-failed")], "fail"),  # ledger says pass, execution failed
+        ([_ex("clean")], "pass"),
+        ([_ex("findings")], "unknown"),  # needs human judgement
+        ([_ex("tool-error")], "unknown"),
+        ([_ex("not-run", status="blocked")], "unknown"),
+    ],
+)
+def test_check_evidence_is_resolved_before_assigning_result(reports: list, expected: str) -> None:
+    row = traceability(_ledger(CHECK_PASS), reports)[0]
+    assert row["result"] == expected and row["basis"] == "verified", row
+
+
+def test_recorded_fail_is_never_overridden_by_a_clean_check() -> None:
+    failing = {**CHECK_PASS, "result": "fail"}
+    row = traceability(_ledger(failing), [_ex("clean")])[0]
+    assert row["result"] == "fail" and "ledger recorded fail" not in row["evidence"][0]
+
+
+def test_recorded_assertions_are_labelled_and_mixed_basis() -> None:
+    manual = {"acceptance_criterion": "AC-1-1", "reference": "QA sign-off", "result": "pass"}
+    assert traceability(_ledger(manual), [])[0]["basis"] == "recorded"
+    row = traceability(_ledger(manual, CHECK_PASS), [_ex("clean")])[0]
+    assert (row["result"], row["basis"]) == ("pass", "mixed")
+    row = traceability(_ledger(manual, CHECK_PASS), [])[0]
+    assert row["result"] == "unknown"  # a recorded pass cannot cover missing evidence
