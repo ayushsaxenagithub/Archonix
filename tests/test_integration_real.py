@@ -72,6 +72,13 @@ def test_real_static_tools_on_example(service: Path, tmp_path: Path) -> None:
 @needs("pytest")
 def test_real_pytest_on_example(service: Path, tmp_path: Path) -> None:
     report = run_report(service, tmp_path / "out", "pytest", "--allow-repo-code")
+    # Acceptance finding F3: the run leaves no bytecode or pytest caches in the repository.
+    leftovers = [
+        p.relative_to(service).as_posix()
+        for p in service.rglob("*")
+        if p.name in {"__pycache__", ".pytest_cache"}
+    ]
+    assert leftovers == []
     ex = report["executions"][0]
     assert ex["outcome"] == "clean"
     assert ex["test_totals"] == {"total": 3, "passed": 3, "failed": 0, "skipped": 0, "errored": 0}

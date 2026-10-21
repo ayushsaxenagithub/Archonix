@@ -9,6 +9,10 @@ behaviour; patch versions are fixes).
 
 ### Fixed
 
+- The `pytest` check sets `PYTHONDONTWRITEBYTECODE=1` for the test process only, so a run
+  no longer leaves `__pycache__` directories in the repository (`.pytest_cache` was already
+  disabled). Found in acceptance testing; nothing is deleted and other tools are unaffected.
+
 - Skill: the bug-investigation and implementation workflows (and `SKILL.md`) now name the
   CLI test-verification command (`archonix check run . --mode audit --allow-repo-code
   --checks pytest`, only when authorized) and require reporting tests as **not run** with
