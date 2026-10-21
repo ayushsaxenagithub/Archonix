@@ -101,7 +101,8 @@ flowchart LR
 ## Documentation
 
 - [Installation](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/installation.md) · [CLI reference](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/cli.md) ·
-  [Configuration](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/configuration.md) · [Workflows](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/workflows.md)
+  [Configuration](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/configuration.md) · [Workflows](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/workflows.md) ·
+  [Project agent context (`.ai/`)](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/project-agents.md)
 - [Permission and trust model](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/trust-model.md) · [Tool adapters](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/tool-adapters.md)
 - [Assistant compatibility](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/assistants.md) · [Capabilities and status](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/capabilities.md)
 - [Architecture](https://github.com/ayushsaxenagithub/Archonix/blob/main/docs/architecture.md) · [Decision records](https://github.com/ayushsaxenagithub/Archonix/tree/main/docs/architecture-decisions)

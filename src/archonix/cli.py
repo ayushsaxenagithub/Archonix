@@ -386,6 +386,68 @@ def cmd_docs_list(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _print_agents_plan(plan: Any, applied_verb: str, hint: str) -> None:
+    for action, rel in plan.actions:
+        if action != "unchanged":
+            print(f"{action:13} {rel}")
+    unchanged = sum(1 for a, _ in plan.actions if a == "unchanged")
+    if unchanged:
+        print(f"{'unchanged':13} {unchanged} file(s)")
+    for note in plan.notes:
+        print(f"note: {note}")
+    for conflict in plan.conflicts:
+        print(f"conflict: {conflict}", file=sys.stderr)
+    if plan.applied:
+        print(applied_verb)
+    elif not plan.conflicts:
+        print(hint)
+
+
+def cmd_agents_init(args: argparse.Namespace) -> int:
+    from .agents import init
+
+    root = _root(args.path)
+    plan = init(
+        root, _settings(args, root), allow_source_writes=args.allow_source_writes, apply=args.apply
+    )
+    _print_agents_plan(
+        plan,
+        "drafted .ai/; review it, then run `archonix agents sync`",
+        "dry run: re-run with --apply --allow-source-writes to write .ai/",
+    )
+    return EXIT_POLICY if plan.conflicts else EXIT_OK
+
+
+def cmd_agents_sync(args: argparse.Namespace) -> int:
+    from .agents import out_of_date, sync
+
+    root = _root(args.path)
+    targets = tuple(t.strip() for t in args.target.split(",") if t.strip())
+    plan = sync(
+        root,
+        targets=targets,
+        allow_source_writes=args.allow_source_writes,
+        apply=args.apply and not args.check,
+    )
+    if args.check:
+        stale = out_of_date(plan)
+        _print_agents_plan(
+            plan,
+            "",
+            "agent context is up to date"
+            if not stale
+            else "agent context is out of date: run `archonix agents sync --apply "
+            "--allow-source-writes`",
+        )
+        return EXIT_NEGATIVE if stale else EXIT_OK
+    _print_agents_plan(
+        plan,
+        "synced agent context from .ai/",
+        "dry run: re-run with --apply --allow-source-writes to write these files",
+    )
+    return EXIT_POLICY if plan.conflicts else EXIT_OK
+
+
 def cmd_docs_init(args: argparse.Namespace) -> int:
     from .docsinit import init_docs
 
@@ -693,6 +755,36 @@ def build_parser() -> argparse.ArgumentParser:
     _add_common(p)
     _add_output(p, formats=("md", "mermaid"))
     p.set_defaults(func=cmd_architecture)
+
+    agents = sub.add_parser(
+        "agents", help="project agent context (.ai/ -> AGENTS.md, CLAUDE.md, skills)"
+    ).add_subparsers(dest="agents_command", required=True, metavar="SUBCOMMAND")
+    p = agents.add_parser("init", help="draft .ai/ from repository evidence (dry run by default)")
+    p.add_argument("path", nargs="?", default=".")
+    p.add_argument("--apply", action="store_true", help="write the files")
+    p.add_argument(
+        "--allow-source-writes", action="store_true", help="permit writing into the repository"
+    )
+    _add_common(p)
+    p.set_defaults(func=cmd_agents_init)
+    p = agents.add_parser("sync", help="render .ai/ into AGENTS.md, CLAUDE.md and skill folders")
+    p.add_argument("path", nargs="?", default=".")
+    p.add_argument(
+        "--target",
+        default="claude,agents",
+        help="comma-separated: claude (.claude/skills + CLAUDE.md), "
+        "agents (.agents/skills, read by Codex and Cursor)",
+    )
+    p.add_argument("--apply", action="store_true", help="write the files")
+    p.add_argument(
+        "--allow-source-writes", action="store_true", help="permit writing into the repository"
+    )
+    p.add_argument(
+        "--check",
+        action="store_true",
+        help="exit 1 if outputs are missing, stale or conflicting (for CI)",
+    )
+    p.set_defaults(func=cmd_agents_sync)
 
     docs = sub.add_parser("docs", help="project document templates").add_subparsers(
         dest="docs_command", required=True, metavar="SUBCOMMAND"

@@ -44,6 +44,7 @@ Status labels:
 | Trivy, pip-audit, deptry, Knip, ESLint, tsc, mypy, ZAP adapters | Planned | manual workflow documented; pip-audit is lower priority because osv-scanner reads Python lockfiles without installing them |
 | Dead-code cleanup proposals | Manual workflow | never automatic |
 | Locust integration, revision-to-revision perf comparison | Planned | manual guidance only |
+| Project agent context: `.ai/` → `AGENTS.md`, `CLAUDE.md` (`@AGENTS.md`), `.claude/skills`, `.agents/skills` (`archonix agents init` / `archonix agents sync`) | Tested (file generation, conflicts, symlink and manifest safety; acceptance AC-12) | Claude Code 2.1.305 loaded the generated `AGENTS.md` through the `CLAUDE.md` import and discovered the project skill (one manual run, 2026-10-21); Codex and Cursor not verified |
 | Installer for Claude Code / Codex / Cursor | Tested (file layout) | assistant discovery not verified — see assistants.md |
 | Installer path safety (manifest traversal, symlinked targets/subdirectories refused) | Tested | POSIX symlink tests; Windows not tested |
 | Repository-local executables via relative `PATH` entries blocked | Tested | |
