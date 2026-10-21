@@ -9,6 +9,10 @@ behaviour; patch versions are fixes).
 
 ### Fixed
 
+- Readiness `require_tests` no longer passes when every test was skipped. It now requires
+  completed, parseable test runs with known and consistent counts and at least one
+  executed test. Previously the total count, including skipped tests, was enough.
+
 - Traceability matrix resolves `check:<id>` evidence before assigning a result: missing
   or unrun checks are `unknown` and failed tests are `fail`, even when the ledger records
   `pass`. Previously the recorded value decided the result. Rows gain a `basis` field

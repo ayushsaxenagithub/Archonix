@@ -63,6 +63,62 @@ def _rule(
     }
 
 
+COUNT_KEYS = ("total", "passed", "failed", "skipped", "errored")
+
+
+def _tests_rule(executions: list[dict[str, Any]]) -> dict[str, Any]:
+    """Tests ran to completion, at least one test actually executed, none failed.
+
+    Skipped tests do not count as executed. Unknown or inconsistent counts, and test
+    runs that did not complete or could not be parsed, make the rule unknown; any
+    failing or erroring test makes it fail.
+    """
+    desc = "automated tests ran to completion, at least one test executed, none failed"
+    runs = [e for e in executions if e.get("test_totals")]
+    if not runs:
+        return _rule("tests", desc, "unknown", "no test results in the supplied reports")
+    totals = [e["test_totals"] for e in runs]
+    if any((t["failed"] or 0) > 0 or (t["errored"] or 0) > 0 for t in totals):
+        return _rule(
+            "tests", desc, "fail", "failing or erroring tests reported", [e["id"] for e in runs]
+        )
+    incomplete = [
+        e
+        for e in runs
+        if e["status"] != "completed" or e["outcome"] in {"tool-error", "parse-error"}
+    ]
+    if incomplete:
+        return _rule(
+            "tests",
+            desc,
+            "unknown",
+            "test run did not complete cleanly: "
+            + ", ".join(f"{e['check_id']} {e['status']}/{e['outcome']}" for e in incomplete),
+        )
+    if any(t[k] is None for t in totals for k in COUNT_KEYS):
+        return _rule("tests", desc, "unknown", "test counts unknown")
+    inconsistent = [
+        e["check_id"]
+        for e, t in zip(runs, totals, strict=True)
+        if t["passed"] + t["failed"] + t["skipped"] + t["errored"] != t["total"]
+    ]
+    if inconsistent:
+        return _rule(
+            "tests", desc, "unknown", f"inconsistent test counts in {', '.join(inconsistent)}"
+        )
+    executed = sum(t["total"] - t["skipped"] for t in totals)
+    skipped = sum(t["skipped"] for t in totals)
+    if executed == 0:
+        return _rule("tests", desc, "unknown", f"no test actually executed ({skipped} skipped)")
+    return _rule(
+        "tests",
+        desc,
+        "pass",
+        f"{executed} executed ({sum(t['passed'] for t in totals)} passed, {skipped} skipped)",
+        [e["id"] for e in runs],
+    )
+
+
 def assess(
     policy: dict[str, Any],
     policy_source: str,
@@ -179,28 +235,7 @@ def assess(
         )
 
     if rules_cfg.get("require_tests"):
-        test_runs = [e for e in executions.values() if e.get("test_totals")]
-        desc = "automated tests ran, at least one test executed, none failed"
-        if not test_runs:
-            rules.append(_rule("tests", desc, "unknown", "no test results in the supplied reports"))
-        else:
-            totals = [e["test_totals"] for e in test_runs]
-            if any((t["failed"] or 0) > 0 or (t["errored"] or 0) > 0 for t in totals):
-                rules.append(_rule("tests", desc, "fail", "failing or erroring tests reported"))
-            elif any(t["total"] is None for t in totals):
-                rules.append(_rule("tests", desc, "unknown", "test totals unknown"))
-            elif sum(t["total"] for t in totals) == 0:
-                rules.append(_rule("tests", desc, "unknown", "zero tests executed"))
-            else:
-                rules.append(
-                    _rule(
-                        "tests",
-                        desc,
-                        "pass",
-                        f"{sum(t['total'] for t in totals)} tests",
-                        [e["id"] for e in test_runs],
-                    )
-                )
+        rules.append(_tests_rule(list(executions.values())))
 
     revisions = {rep["repository"].get("revision") for _, rep in reports}
     if rules_cfg.get("require_revision"):
