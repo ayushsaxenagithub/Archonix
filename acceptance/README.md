@@ -31,6 +31,7 @@ needed tool is missing); a SKIP is never counted as a pass.
 | AC-10 | Honest unsupported stacks | Python checks "not applicable" on TypeScript; Go counted as a language with no framework claimed; static-only scope stated |
 | AC-11 | Requirements | template and example ledgers validate; a broken ledger is rejected with reasons |
 | AC-12 | Project agent context | `agents init` and `agents sync` are dry runs by default and need `--allow-source-writes`; they produce `AGENTS.md`, a `CLAUDE.md` import and valid skills; `--check` passes after sync; hand-edited outputs are protected |
+| AC-13 | Test plan and traceability | `tests scaffold` writes one stub per criterion and never overwrites; JUnit results link to criteria (pass, fail, pending → unknown); a real pytest run makes an implemented criterion pass while pending stubs stay unknown |
 
 Scenarios: **S1** Python service (`examples/python-service`), **S2** TypeScript web app
 (`examples/ts-web`), **S3** mixed monorepo (`examples/mixed-monorepo`), **S4** Go-only
