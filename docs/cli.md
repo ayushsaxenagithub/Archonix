@@ -117,6 +117,24 @@ archonix architecture diagram examples/mixed-monorepo
 archonix architecture diagram . --python-package src/archonix --format mermaid
 ```
 
+### `archonix agents init [PATH]` / `archonix agents sync [PATH]`
+
+Project agent context (see [project-agents.md](project-agents.md)).
+
+- `init` drafts `.ai/instructions.md`, and a requirements skill when
+  `docs/requirements.json` is valid, from static evidence. It never overwrites files.
+- `sync` renders `.ai/` into `AGENTS.md`, `CLAUDE.md` (`@AGENTS.md`) and skill folders.
+  `--target claude,agents` chooses the outputs; `--check` exits 1 when outputs are
+  missing, stale or conflicting.
+- Both are dry runs unless `--apply`, and writing needs `--allow-source-writes`.
+  Conflicts exit 3.
+
+```bash
+archonix agents init . --apply --allow-source-writes
+archonix agents sync . --apply --allow-source-writes
+archonix agents sync . --check
+```
+
 ### `archonix docs list` / `archonix docs init [PATH] --set NAME`
 
 Project document templates for one workflow. Dry run unless `--apply`; writing also needs

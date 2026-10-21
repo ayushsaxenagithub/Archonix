@@ -56,6 +56,14 @@ behaviour; patch versions are fixes).
 
 ### Added
 
+- `archonix agents init` and `archonix agents sync`: `.ai/` as one source of project
+  agent context, rendered to `AGENTS.md`, a `CLAUDE.md` that imports it, and project
+  skills in `.claude/skills/` and `.agents/skills/`. `init` drafts the files from static
+  evidence and the requirements ledger, marking unknowns TODO.
+  - Safety: dry run by default; writing needs `--allow-source-writes`; hash manifest;
+    never overwrites unmanaged or hand-edited files; refuses symlinks.
+  - CI: `--check` reports stale outputs.
+
 - Acceptance suites: `acceptance/cli_acceptance.py` (installed CLI on four scenario
   repositories, criteria AC-1..AC-11; runs in CI) and `acceptance/claude_code.py` (opt-in
   Claude Code run of four tasks with automatic, transcript-based scoring), plus a manual

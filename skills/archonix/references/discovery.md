@@ -44,7 +44,16 @@ assumptions (`accepted_as_assumption: true`) before requirements become `approve
 non-critical unknowns can stay documented. Existing explicit authorization that covers
 the scope counts — do not ask again.
 
-## 5. Stack proposals (new projects)
+## 5. Project agent context
+
+Once requirements are approved, give every assistant the same project context:
+`archonix agents init . --apply --allow-source-writes` drafts `.ai/instructions.md`, and
+a requirements skill from the ledger. Fill in its TODOs, then run
+`archonix agents sync . --apply --allow-source-writes` to write `AGENTS.md`, `CLAUDE.md`
+and the skill folders. Both write into the repository, so they need the user's approval
+for source changes.
+
+## 6. Stack proposals (new projects)
 
 Propose a stack with trade-offs (team familiarity, hosting, cost, ecosystem maturity,
 security posture) and get approval when the choice materially affects the product.
