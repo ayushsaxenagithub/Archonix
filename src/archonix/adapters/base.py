@@ -35,6 +35,10 @@ class ParseOutcome:
     # reported targets it could not analyse, None = the tool does not say.
     complete: bool | None = None
     coverage_detail: str | None = None
+    # Individual test cases (name, classname, file, result, ac_ids) when the tool reports
+    # them; used to link test results to acceptance criteria. Keep new fields last so
+    # positional construction of the earlier fields keeps its meaning.
+    test_cases: list[dict[str, Any]] | None = None
 
 
 class Adapter:

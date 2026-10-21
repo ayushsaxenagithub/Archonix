@@ -56,6 +56,19 @@ behaviour; patch versions are fixes).
 
 ### Added
 
+- `archonix tests scaffold`: one test stub per acceptance criterion (pytest, Jest,
+  Vitest), named with the criterion's ID (`test_ac_001_1__…` / `"AC-001-1: …"`).
+  - Stubs are pending by default (`--failing` for test-first work) and files are never
+    overwritten.
+  - `test.todo` is never generated, because jest-junit reports it like a pass.
+- Traceability from individual test results.
+  - The pytest check records each test case (an optional `test_cases` field on execution
+    records).
+  - `requirements matrix --junit FILE` reads any runner's JUnit XML.
+  - Tests are linked to criteria by the ID in their names: passed → pass, failed or
+    errored → fail, skipped → unknown.
+  - `test:<name>` ledger evidence matches specific tests, and tests naming unknown IDs
+    are warned about.
 - `archonix agents init` and `archonix agents sync`: `.ai/` as one source of project
   agent context, rendered to `AGENTS.md`, a `CLAUDE.md` that imports it, and project
   skills in `.claude/skills/` and `.agents/skills/`. `init` drafts the files from static

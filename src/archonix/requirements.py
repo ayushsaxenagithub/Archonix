@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .schemas import errors_for
+from .testcases import matches_reference
 
 ACTIVE_STATUSES = {"approved", "in-progress", "implemented", "verified"}
 
@@ -133,8 +134,47 @@ def _find_cycle(by_id: dict[str, dict[str, Any]]) -> list[str] | None:
 CHECK_OUTCOME_RESULT = {"clean": "pass", "tests-failed": "fail"}
 
 
+CASE_RESULT = {"passed": "pass", "failed": "fail", "errored": "fail", "skipped": "unknown"}
+
+
+def collect_cases(
+    reports: list[dict[str, Any]], junit: list[tuple[str, list[dict[str, Any]]]] | None = None
+) -> list[dict[str, Any]]:
+    """Test cases from workflow reports (``executions[].test_cases``) and from directly
+    supplied JUnit files, each tagged with where it came from."""
+    cases = [
+        {**c, "source": e["check_id"]}
+        for r in reports
+        for e in r.get("executions", [])
+        for c in (e.get("test_cases") or [])
+    ]
+    for label, junit_cases in junit or []:
+        cases += [{**c, "source": label} for c in junit_cases]
+    return cases
+
+
+def _case_evidence(case: dict[str, Any]) -> tuple[str, str, str]:
+    result = CASE_RESULT.get(case.get("result", ""), "unknown")
+    return result, "verified", f"test {case['name']} ({case['source']}) -> {case.get('result')}"
+
+
+def _test_reference(e: dict[str, Any], cases: list[dict[str, Any]]) -> tuple[str, str, str]:
+    """Resolve an explicit ``test:<name>`` ledger reference against supplied test cases."""
+    ref, recorded = e["reference"].removeprefix("test:"), e["result"]
+    matched = [c for c in cases if matches_reference(ref, c)]
+    if not matched:
+        return "unknown", "verified", f"test:{ref} -> not found in supplied test results"
+    results = {CASE_RESULT.get(c.get("result", ""), "unknown") for c in matched}
+    resolved = "fail" if "fail" in results else "unknown" if results - {"pass"} else "pass"
+    result = "fail" if "fail" in (resolved, recorded) else resolved
+    outcomes = ", ".join(sorted({str(c.get("result")) for c in matched}))
+    return result, "verified", f"test:{ref} -> {outcomes}"
+
+
 def _evidence_result(
-    e: dict[str, Any], executions: dict[str, dict[str, Any]]
+    e: dict[str, Any],
+    executions: dict[str, dict[str, Any]],
+    cases: list[dict[str, Any]] | None = None,
 ) -> tuple[str, str, str]:
     """Return (result, basis, description) for one evidence entry.
 
@@ -144,6 +184,8 @@ def _evidence_result(
     assertions rather than verified execution evidence.
     """
     ref, recorded = e["reference"], e["result"]
+    if ref.startswith("test:"):
+        return _test_reference(e, cases or [])
     if not ref.startswith("check:"):
         return recorded, "recorded", f"{ref} (recorded {recorded}; not machine-checked)"
     ex = executions.get(ref.removeprefix("check:"))
@@ -158,22 +200,30 @@ def _evidence_result(
     return result, "verified", f"{ref} -> {ex.get('status')}/{ex.get('outcome')}{note}"
 
 
-def traceability(ledger: dict[str, Any], reports: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def traceability(
+    ledger: dict[str, Any],
+    reports: list[dict[str, Any]],
+    junit: list[tuple[str, list[dict[str, Any]]]] | None = None,
+) -> list[dict[str, Any]]:
     """One row per acceptance criterion with its evidence and a conservative result.
 
-    Results: ``fail`` if any evidence fails, else ``unknown`` if any is unresolved,
-    else ``pass``; ``missing`` when no evidence is linked. ``basis`` says whether the
-    result rests on resolved check executions (``verified``), on recorded assertions
-    only (``recorded``), or both (``mixed``).
+    Evidence is the ledger's entries (``check:<id>``, ``test:<name>`` or recorded
+    assertions) plus every supplied test case whose name carries the criterion's ID.
+    Results: ``fail`` if any evidence fails, else ``unknown`` if any is unresolved (a
+    skipped test, a missing check), else ``pass``; ``missing`` when nothing is linked.
+    ``basis`` says whether the result rests on resolved executions and test results
+    (``verified``), on recorded assertions only (``recorded``), or both (``mixed``).
     """
     executions = {e["check_id"]: e for r in reports for e in r.get("executions", [])}
+    cases = collect_cases(reports, junit)
     rows = []
     for req in ledger["requirements"]:
         evidence = req["verification"].get("evidence", [])
         criteria = req["acceptance_criteria"] or [{"id": "—", "description": "(no criteria)"}]
         for ac in criteria:
             linked = [e for e in evidence if e.get("acceptance_criterion") in (ac["id"], None)]
-            judged = [_evidence_result(e, executions) for e in linked]
+            judged = [_evidence_result(e, executions, cases) for e in linked]
+            judged += [_case_evidence(c) for c in cases if ac["id"] in c.get("ac_ids", [])]
             results = {r for r, _, _ in judged}
             bases = {b for _, b, _ in judged}
             if not judged:
@@ -196,12 +246,25 @@ def traceability(ledger: dict[str, Any], reports: list[dict[str, Any]]) -> list[
     return rows
 
 
+def orphan_tests(ledger: dict[str, Any], cases: list[dict[str, Any]]) -> list[str]:
+    """Test cases naming acceptance-criterion IDs that the ledger does not define."""
+    known = {ac["id"] for r in ledger["requirements"] for ac in r["acceptance_criteria"]}
+    return sorted(
+        {
+            f"{c['name']} -> {ac_id}"
+            for c in cases
+            for ac_id in c.get("ac_ids", [])
+            if ac_id not in known
+        }
+    )
+
+
 def render_matrix(rows: list[dict[str, Any]]) -> str:
     out = [
         "# Acceptance traceability matrix",
         "",
-        "Basis: `verified` = resolved against supplied check executions; `recorded` = "
-        "assertion recorded in the ledger, not machine-checked.",
+        "Basis: `verified` = resolved against supplied check executions or test results; "
+        "`recorded` = assertion recorded in the ledger, not machine-checked.",
         "",
         "| Requirement | Priority | Status | Criterion | Method | Result | Basis | Evidence |",
         "|---|---|---|---|---|---|---|---|",

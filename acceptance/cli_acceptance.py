@@ -706,6 +706,96 @@ class Suite:
             f"exit {r.returncode}",
         )
 
+    def test_plan(self) -> None:
+        proj = self.repo("s6-testplan", "python-service")
+        ledger = json.loads((REPO / "examples" / "requirements" / "ledger.json").read_text())
+        for req in ledger["requirements"]:  # no recorded evidence: results must come from tests
+            req["verification"] = {"method": "automated-test", "evidence": []}
+            req["status"] = "approved" if req["acceptance_criteria"] else "proposed"
+        (proj / "docs").mkdir(exist_ok=True)
+        (proj / "docs" / "requirements.json").write_text(json.dumps(ledger))
+        write = ["--apply", "--allow-source-writes"]
+        r = self.arx("tests", "scaffold", str(proj), "--framework", "pytest", *write)
+        stub = proj / "tests" / "acceptance" / "test_req_001.py"
+        self.check(
+            "AC-13",
+            "S1",
+            "scaffold writes one stub per acceptance criterion",
+            r.returncode == 0 and stub.is_file() and stub.read_text().count("def test_ac_") == 2,
+            f"exit {r.returncode}",
+        )
+        r = self.arx("tests", "scaffold", str(proj), "--framework", "pytest", *write)
+        self.check(
+            "AC-13",
+            "S1",
+            "re-running scaffold never overwrites",
+            r.returncode == 0 and "exists, left unchanged" in r.stdout,
+            "exists",
+        )
+        matrix_json = self.work / "out" / "matrix.json"
+        r = self.arx(
+            "requirements",
+            "matrix",
+            str(proj / "docs" / "requirements.json"),
+            "--junit",
+            str(REPO / "tests" / "fixtures" / "tool-output" / "vitest-junit.xml"),
+            "--format",
+            "json",
+            "--out",
+            str(matrix_json),
+            "--overwrite",
+        )
+        rows = (
+            {x["criterion"]: x["result"] for x in json.loads(matrix_json.read_text())}
+            if r.returncode == 0
+            else {}
+        )
+        self.check(
+            "AC-13",
+            "-",
+            "JUnit results link to criteria (pass / fail / pending)",
+            rows.get("AC-001-1") == "pass"
+            and rows.get("AC-001-2") == "fail"
+            and rows.get("AC-002-1") == "unknown",
+            str(rows),
+        )
+        if not shutil.which("pytest"):
+            self.skip("AC-13", "S1", "real pytest results link to criteria", "pytest not on PATH")
+            return
+        stub.write_text(
+            stub.read_text().replace(
+                '    pytest.skip("not implemented: AC-001-1")',
+                "    from decimal import Decimal\n\n    from app.pricing import apply_discount\n\n"
+                '    assert apply_discount(Decimal("200.00"), 25) == Decimal("150.00")',
+                1,
+            )
+        )
+        report = self.run("S1", proj, "pytest", "s6-pytest", "--allow-repo-code")
+        if report is None:
+            return
+        r = self.arx(
+            "requirements",
+            "matrix",
+            str(proj / "docs" / "requirements.json"),
+            "--report",
+            str(self.work / "out" / "s6-pytest" / "report.json"),
+            "--format",
+            "json",
+            "--out",
+            str(matrix_json),
+            "--overwrite",
+        )
+        rows = {x["criterion"]: x["result"] for x in json.loads(matrix_json.read_text())}
+        self.check(
+            "AC-13",
+            "S1",
+            "implemented test passes; pending stubs stay unknown",
+            rows.get("AC-001-1") == "pass"
+            and rows.get("AC-001-2") == "unknown"
+            and rows.get("AC-002-1") == "unknown",
+            str(rows),
+        )
+
     def installer(self) -> None:
         home, proj = self.work / "home", self.work / "proj"
         proj.mkdir(exist_ok=True)
@@ -763,6 +853,7 @@ def main() -> int:
         suite.mixed_monorepo,
         suite.unsupported_stack,
         suite.agent_context,
+        suite.test_plan,
         suite.installer,
     ):
         step()

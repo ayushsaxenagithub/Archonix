@@ -143,6 +143,21 @@ def _redact_artifacts(
     return count, notes
 
 
+def _redact_cases(
+    cases: list[dict[str, Any]] | None, redactor: Redactor | None
+) -> list[dict[str, Any]] | None:
+    if cases is None or redactor is None:
+        return cases
+    out = []
+    for case in cases:
+        clean = dict(case)
+        for key in ("name", "classname", "file"):
+            if isinstance(clean.get(key), str):
+                clean[key] = redactor.redact(clean[key])[0]
+        out.append(clean)
+    return out
+
+
 def _finalize_artifacts(
     work: Path, tool: str, redactor: Redactor
 ) -> tuple[list[dict[str, Any]], int, list[str]]:
@@ -212,6 +227,7 @@ def _record(
         "artifacts": artifacts or [],
         "redaction": {"applied": redactor is not None, "replacements": replacements},
         "test_totals": parsed.test_totals if parsed else None,
+        "test_cases": _redact_cases(parsed.test_cases, redactor) if parsed else None,
         "findings_count": len(parsed.findings) if parsed and outcome != "parse-error" else None,
         "parse_limitations": limitations,
         "coverage": None

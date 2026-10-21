@@ -33,7 +33,9 @@ severity in `source`.
   "(partial scan)") and are listed as limitations.
 - **vulture**: `info` severity; confidence `medium` for ≥ 90 %, else `low`. A vulture
   percentage expresses "no static reference", not proof of non-use.
-- **pytest**: totals from JUnit XML; each failure/error becomes a `test-failure` finding.
+- **pytest**: totals from JUnit XML; each failure/error becomes a `test-failure` finding,
+  and every test case is recorded in `test_cases` (up to 10,000), with the acceptance
+  criterion IDs in its name, for the traceability matrix.
   Exit 5 (no tests collected) is a `tool-error`, not a pass. A missing or malformed JUnit
   file leaves all counts `null`.
 - **gitleaks**: the matched secret text is never copied into the report; only rule,
