@@ -12,7 +12,8 @@ Status labels:
 
 | Capability | Status | Notes |
 |---|---|---|
-| Skill entry point and workflow selection | Tested (structure) | `SKILL.md` validated (frontmatter, links, size). Whether an assistant follows it is not machine-verified. |
+| Skill entry point and workflow selection | Tested (structure); tested in Claude Code | `SKILL.md` validated (frontmatter, links, size). Claude Code 2.1.305 invoked the skill and followed the workflow in 4/4 acceptance tasks (opt-in run, 2026-10-21). Codex and Cursor not tested. |
+| CLI acceptance suite (installed wheel, four scenario repositories) | Tested | `acceptance/cli_acceptance.py`; 60/60 locally; runs in the CI `build` job (tools not installed there are skipped) |
 | Requirements ledger schema + semantic validation | Tested | IDs, dependencies, cycles, approval gates, evidence |
 | Discovery document templates | Tested | `docs init --set discovery` |
 | Acceptance traceability matrix | Tested | `check:<id>` evidence resolved against reports |

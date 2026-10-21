@@ -82,6 +82,8 @@ ignore = ["S603", "S607"]
 # Adapter classes declare constant metadata tables as class attributes.
 "src/archonix/adapters/*" = ["RUF012"]
 "tests/**" = ["S101", "S105", "S106", "S108", "S310", "S311"]
+# Acceptance suites use deliberately synthetic credentials as test data.
+"acceptance/**" = ["S105"]
 
 [tool.mypy]
 python_version = "3.11"

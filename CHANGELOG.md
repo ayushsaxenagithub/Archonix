@@ -28,6 +28,11 @@ behaviour; patch versions are fixes).
 
 ### Added
 
+- Acceptance suites: `acceptance/cli_acceptance.py` (installed CLI on four scenario
+  repositories, criteria AC-1..AC-11; runs in CI) and `acceptance/claude_code.py` (opt-in
+  Claude Code run of four tasks with automatic, transcript-based scoring), plus a manual
+  procedure for Codex and Cursor. Results: `docs/acceptance/2026-10-21-results.md`.
+
 - `osv-scanner` check: dependency vulnerabilities from lockfiles and requirements files in
   any directory and many ecosystems (Python, npm, Go, Rust, Ruby, PHP, …). Requires
   `--allow-network`; call analysis is disabled so no build scripts run. Verified against
