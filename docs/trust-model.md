@@ -30,7 +30,7 @@ Modes only choose defaults (see [configuration.md](configuration.md)).
 | `docs init` writes into the repository only with `--apply --allow-source-writes`, never overwriting | `docsinit.py` | `test_docs_and_architecture.py` |
 | `install`/`uninstall` are dry runs by default, touch only unmodified manifest-listed files, refuse manifest entries that are absolute or contain `..`, and refuse symlinked targets or path components (project scope: anywhere below the project root) | `install.py` | `test_install.py`, `test_hardening.py` |
 | `perf smoke` needs `--allow-network`, issues only GET/HEAD, caps requests/concurrency, needs `--authorized-host` for non-loopback, does not follow redirects or use env proxies | `perf.py` | `test_perf.py` |
-| Output excerpts, findings, argv and retained artifacts are redacted before being written | `redact.py`, `checks.py` | `test_redact.py`, `test_integration_real.py` |
+| Output excerpts, findings, argv and retained artifacts are redacted before being written, on every exit path (including timeouts and adapter errors); artifacts that cannot be redacted are removed and reported | `redact.py`, `checks.py` | `test_redact.py`, `test_hardening.py`, `test_integration_real.py` |
 
 No built-in check installs dependencies, touches shared environments or performs
 destructive operations; those permissions exist so plans and future adapters can be

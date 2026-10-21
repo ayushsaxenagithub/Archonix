@@ -48,6 +48,8 @@ directory, or install with `--scope user` if you manage `~/.claude` through dotf
 relative `PATH` entries (such as `.` or `node_modules/.bin`) so a repository cannot
 substitute its own executables. Put the tool's directory on `PATH` as an absolute path.
 
-**Report says an artifact "was not redacted".** Retained artifacts that are binary, larger
-than 20 MB, unreadable or symlinks are kept as written by the tool and named in the
-report's limitations. Treat them as sensitive or delete them.
+**Report says an artifact "could not be redacted, and was removed".** A retained artifact
+that is binary, larger than 20 MB, unreadable or a symlink cannot be redacted, so it is
+removed from the output directory and named in the report's limitations. This happens
+on every exit path, including timeouts. Re-run with a larger limit or inspect the tool
+directly if you need that file.

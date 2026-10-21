@@ -9,6 +9,13 @@ behaviour; patch versions are fixes).
 
 ### Fixed
 
+- Retained artifacts are redacted and listed on every exit path of a check, including
+  timeouts and adapter errors. Previously, a timed-out tool's report kept any secret it
+  contained and was missing from the execution record. Artifacts that cannot be redacted
+  (binary, oversized, unreadable, symlinks) are now removed from the output directory and
+  reported, rather than kept. An adapter that raises is recorded as `parse-error` instead
+  of aborting the whole run.
+
 - Timeout cleanup sends SIGKILL to the whole process group after the grace period even
   when the direct child already exited, so descendants that ignore SIGTERM no longer
   survive a timeout.
