@@ -57,10 +57,17 @@ criteria for approved work, critical-question gate, passing evidence for `verifi
 
 ### `archonix requirements matrix FILE [--report REPORT ...]`
 
-Acceptance traceability matrix. `check:<id>` evidence is resolved against the reports.
+Acceptance traceability matrix.
+
+- `check:<id>` evidence is resolved against the reports.
+- Test cases recorded in the reports, and in `--junit FILE` (repeatable; any JUnit XML),
+  are linked to criteria by the ID in their names.
+- `test:<name>` evidence matches a specific test.
+- Tests that name unknown IDs are reported as warnings.
 
 ```bash
 archonix requirements matrix docs/requirements.json --report .archonix/run/report.json
+archonix requirements matrix docs/requirements.json --junit junit.xml
 ```
 
 ### `archonix check list`
@@ -115,6 +122,20 @@ package (parsed with `ast`). `--format md|mermaid`.
 ```bash
 archonix architecture diagram examples/mixed-monorepo
 archonix architecture diagram . --python-package src/archonix --format mermaid
+```
+
+### `archonix tests scaffold [PATH] --framework pytest|jest|vitest`
+
+One test stub per acceptance criterion in `docs/requirements.json` (`--ledger` to
+override), named with the criterion's ID; see [test-plan.md](test-plan.md).
+
+- Options: `--out-dir` (default `tests/acceptance`), `--typescript` for Jest/Vitest, and
+  `--failing` (stubs fail instead of being skipped).
+- Dry run unless `--apply`; writing needs `--allow-source-writes`.
+- Never overwrites.
+
+```bash
+archonix tests scaffold . --framework pytest --apply --allow-source-writes
 ```
 
 ### `archonix agents init [PATH]` / `archonix agents sync [PATH]`

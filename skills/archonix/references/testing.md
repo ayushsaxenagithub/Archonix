@@ -24,6 +24,15 @@ records command, version, duration, exit status and totals from JUnit XML. Exit 
 interpreted per tool (pytest: 0 passed, 1 failures, 5 no tests collected = not a pass).
 Never run destructive tests against production or real customer data.
 
+## Tests from acceptance criteria
+
+`archonix tests scaffold . --framework pytest --apply --allow-source-writes` (or `jest`,
+`vitest`) writes one pending stub per acceptance criterion, named with its ID
+(`test_ac_001_1__…`, or `"AC-001-1: …"`). Replace the stubs with real tests and keep the
+IDs. The matrix then links results to criteria with no ledger edits. Pending stubs
+count as *unknown*, never as passed. Details: `docs/test-plan.md` in the Archonix
+repository.
+
 ## Traceability matrix
 
 Record evidence in the ledger (`verification.evidence[]`), using `check:<check_id>` to

@@ -26,9 +26,10 @@
 
 1. ✅ Project agent context: `.ai/` source, `archonix agents init` and `archonix agents sync`, generated
    `AGENTS.md`, `CLAUDE.md` and project skills ([project-agents.md](project-agents.md)).
-2. Test plan: one test stub per acceptance criterion, named with its ID
-   (a planned "tests scaffold" command for pytest, Jest and Vitest; not available yet).
-3. Traceability from test results: `test:<id>` evidence resolved from JUnit reports.
+2. ✅ Test plan: `archonix tests scaffold` writes one test stub per acceptance criterion,
+   named with its ID, for pytest, Jest and Vitest ([test-plan.md](test-plan.md)).
+3. ✅ Traceability from test results: tests linked to criteria by ID from pytest reports
+   or any JUnit file (`--junit`); `test:<name>` evidence.
 4. Stack decision ADR with explicit approval, then a project skeleton from official
    generators.
 5. Brief-to-working-app acceptance run in Claude Code, scored.

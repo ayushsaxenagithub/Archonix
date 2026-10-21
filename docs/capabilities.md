@@ -44,6 +44,8 @@ Status labels:
 | Trivy, pip-audit, deptry, Knip, ESLint, tsc, mypy, ZAP adapters | Planned | manual workflow documented; pip-audit is lower priority because osv-scanner reads Python lockfiles without installing them |
 | Dead-code cleanup proposals | Manual workflow | never automatic |
 | Locust integration, revision-to-revision perf comparison | Planned | manual guidance only |
+| Test stubs from acceptance criteria (`archonix tests scaffold`, pytest / Jest / Vitest) | Tested | stubs pending by default; real pytest and Vitest runs verified end to end (2026-10-21); Jest stubs checked as generated text only |
+| Traceability from individual test results (pytest report cases, `--junit` for any runner, `test:<name>` refs) | Tested | JUnit formats recorded from pytest 9.1.1, Vitest 5.0.5, Jest 30.5.2 + jest-junit 17.0.0; jest `test.todo` detected as pending |
 | Project agent context: `.ai/` → `AGENTS.md`, `CLAUDE.md` (`@AGENTS.md`), `.claude/skills`, `.agents/skills` (`archonix agents init` / `archonix agents sync`) | Tested (file generation, conflicts, symlink and manifest safety; acceptance AC-12) | Claude Code 2.1.305 loaded the generated `AGENTS.md` through the `CLAUDE.md` import and discovered the project skill (one manual run, 2026-10-21); Codex and Cursor not verified |
 | Installer for Claude Code / Codex / Cursor | Tested (file layout) | assistant discovery not verified — see assistants.md |
 | Installer path safety (manifest traversal, symlinked targets/subdirectories refused) | Tested | POSIX symlink tests; Windows not tested |

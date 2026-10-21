@@ -13,6 +13,7 @@ from typing import Any
 from ..findings import make_finding
 from ..policy import Requirements
 from ..runner import RunResult
+from ..testcases import MAX_CASES, cases_from_root
 from .base import (
     STATUS_TESTED_FIXTURES,
     STATUS_TESTED_REAL,
@@ -365,19 +366,26 @@ def parse_junit(report: Path, check_id: str, ctx: Context, *, failed: bool) -> P
         **totals,
         "passed": totals["total"] - totals["failed"] - totals["skipped"] - totals["errored"],
     }
+    cases, truncated = cases_from_root(root)
+    limitations = [f"only the first {MAX_CASES} test cases were recorded"] if truncated else []
     if failed or totals["failed"] or totals["errored"]:
-        return ParseOutcome(
+        outcome = ParseOutcome(
             "tests-failed",
             f"{totals['failed']} failed, {totals['errored']} errored of {totals['total']}",
             findings,
             test_totals,
+            limitations=limitations,
         )
-    return ParseOutcome(
-        "clean",
-        f"{test_totals['passed']} passed, {totals['skipped']} skipped",
-        findings,
-        test_totals,
-    )
+    else:
+        outcome = ParseOutcome(
+            "clean",
+            f"{test_totals['passed']} passed, {totals['skipped']} skipped",
+            findings,
+            test_totals,
+            limitations=limitations,
+        )
+    outcome.test_cases = [c.as_dict() for c in cases]
+    return outcome
 
 
 def _finish(findings: list[dict[str, Any]], skipped: int, tool_says_findings: bool) -> ParseOutcome:

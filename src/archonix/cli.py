@@ -159,8 +159,15 @@ def cmd_requirements_validate(args: argparse.Namespace) -> int:
 
 
 def cmd_requirements_matrix(args: argparse.Namespace) -> int:
-    from .requirements import render_matrix, traceability, validate_ledger
+    from .requirements import (
+        collect_cases,
+        orphan_tests,
+        render_matrix,
+        traceability,
+        validate_ledger,
+    )
     from .schemas import validate
+    from .testcases import parse_junit_cases
 
     ledger = _load(args.file)
     result = validate_ledger(ledger)
@@ -173,12 +180,53 @@ def cmd_requirements_matrix(args: argparse.Namespace) -> int:
         doc = _load(path)
         validate(doc, "workflow-report")
         reports.append(doc)
-    rows = traceability(ledger, reports)
+    junit = []
+    for path in args.junit or []:
+        try:
+            cases, truncated = parse_junit_cases(Path(path))
+        except ValueError as exc:
+            raise ValidationFailed(str(exc)) from exc
+        if truncated:
+            print(f"warning: {path}: only the first test cases were read", file=sys.stderr)
+        junit.append((Path(path).name, [c.as_dict() for c in cases]))
+    rows = traceability(ledger, reports, junit)
+    for orphan in orphan_tests(ledger, collect_cases(reports, junit)):
+        print(
+            f"warning: test references an acceptance criterion not in the ledger: {orphan}",
+            file=sys.stderr,
+        )
     _emit(
         _dump(rows) if args.format == "json" else render_matrix(rows),
         Path(args.out) if args.out else None,
         overwrite=args.overwrite,
     )
+    return EXIT_OK
+
+
+def cmd_tests_scaffold(args: argparse.Namespace) -> int:
+    from .testplan import scaffold
+
+    root = _root(args.path)
+    plan = scaffold(
+        root,
+        framework=args.framework,
+        ledger_path=Path(args.ledger) if args.ledger else None,
+        out_dir=args.out_dir,
+        typescript=args.typescript,
+        failing=args.failing,
+        allow_source_writes=args.allow_source_writes,
+        apply=args.apply,
+    )
+    verb = "created" if plan.written else "would create"
+    for action, rel, count in plan.files:
+        label = verb if action == "create" else "exists, left unchanged:"
+        print(f"{label} {rel} ({count} stub(s))")
+    for note in plan.notes:
+        print(f"note: {note}")
+    if not plan.files:
+        print("nothing to scaffold: no requirement with acceptance criteria")
+    elif not args.apply:
+        print("dry run: re-run with --apply --allow-source-writes to write these files")
     return EXIT_OK
 
 
@@ -676,10 +724,39 @@ def build_parser() -> argparse.ArgumentParser:
     p = req.add_parser("matrix", help="acceptance traceability matrix")
     p.add_argument("file")
     p.add_argument(
-        "--report", action="append", help="workflow report used to resolve check: evidence"
+        "--report",
+        action="append",
+        help="workflow report: resolves check:<id> evidence and its recorded test cases",
+    )
+    p.add_argument(
+        "--junit",
+        action="append",
+        help="JUnit XML from any test runner (pytest, Jest, Vitest); repeatable",
     )
     _add_output(p)
     p.set_defaults(func=cmd_requirements_matrix)
+
+    tst = sub.add_parser("tests", help="tests generated from acceptance criteria").add_subparsers(
+        dest="tests_command", required=True, metavar="SUBCOMMAND"
+    )
+    p = tst.add_parser(
+        "scaffold", help="one test stub per acceptance criterion (dry run by default)"
+    )
+    p.add_argument("path", nargs="?", default=".")
+    p.add_argument("--framework", required=True, choices=["pytest", "jest", "vitest"])
+    p.add_argument("--ledger", help="requirements ledger (default: docs/requirements.json)")
+    p.add_argument("--out-dir", help="directory inside the repository (default: tests/acceptance)")
+    p.add_argument("--typescript", action="store_true", help="write .test.ts files (Jest/Vitest)")
+    p.add_argument(
+        "--failing",
+        action="store_true",
+        help="stubs fail until implemented (default: skipped, i.e. pending)",
+    )
+    p.add_argument("--apply", action="store_true", help="write the files")
+    p.add_argument(
+        "--allow-source-writes", action="store_true", help="permit writing into the repository"
+    )
+    p.set_defaults(func=cmd_tests_scaffold)
 
     chk = sub.add_parser("check", help="plan and run checks").add_subparsers(
         dest="check_command", required=True, metavar="SUBCOMMAND"
