@@ -13,6 +13,8 @@ behaviour; patch versions are fixes).
   any directory and many ecosystems (Python, npm, Go, Rust, Ruby, PHP, …). Requires
   `--allow-network`; call analysis is disabled so no build scripts run. Verified against
   osv-scanner 2.7.0, with recorded fixtures and a scheduled real-tool CI job.
+- CI `semgrep` job: the `semgrep-local` adapter is now verified against real semgrep
+  1.182.0 on every pull request (findings, clean scan, invalid rules).
 
 ## [0.1.1] - unreleased
 

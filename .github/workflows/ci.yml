@@ -117,3 +117,23 @@ jobs:
         run: |
           uv sync --locked
           uv run pytest -m integration -k gitleaks -q -rs
+
+  semgrep:
+    name: semgrep adapter (real tool)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: "3.12"
+      - name: Install semgrep (pinned) in an isolated tool environment
+        run: uv tool install semgrep==1.182.0
+      # Rules are written into the test repository, so the scan itself is offline
+      # (metrics and version checks are disabled by the adapter).
+      - name: Verify the semgrep-local adapter against the real tool
+        run: |
+          uv sync --locked
+          uv run pytest -m integration -k semgrep -q -rs

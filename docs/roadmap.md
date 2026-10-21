@@ -7,8 +7,9 @@
 - Stack detection is strongest for Python and JavaScript/TypeScript; other ecosystems get
   language counts and manifest listing only. Detection reflects declared dependencies
   and configuration, not runtime behaviour.
-- Adapters: ruff, bandit, vulture, pytest and gitleaks are verified against real tools;
-  semgrep and npm audit only against fixtures written from their documented formats.
+- Adapters: ruff, bandit, vulture, pytest, gitleaks and semgrep (local rules) are verified
+  against real tools in CI on every pull request, and osv-scanner in the scheduled
+  dependency-audit workflow; semgrep registry rules and npm audit only against fixtures.
 - `npm audit` covers the root lockfile only; no Yarn/pnpm audit adapters.
 - Architecture generation: inventory context diagram and Python import graph only. No
   JS/TS import graph, no route or data-model extraction.
@@ -25,7 +26,8 @@
 
 1. Adapters: Trivy, deptry, Knip, ESLint, mypy/tsc (OSV-Scanner added after 0.1.1; see CHANGELOG)
    (starter tasks in [good-first-issues.md](good-first-issues.md)).
-2. Verify the semgrep adapter against real tool runs in CI.
+2. Verify the semgrep-registry and npm-audit adapters against real tools (both need the
+   network; candidates for the scheduled workflow).
 3. JS/TS import graph using an established parser; framework route inventories.
 4. Run user-approved k6/Locust scenarios with recorded methodology; revision comparison.
 5. SARIF import/export for findings.

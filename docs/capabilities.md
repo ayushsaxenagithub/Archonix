@@ -28,7 +28,8 @@ Status labels:
 | ruff / bandit / vulture adapters | Tested + real | |
 | pytest adapter (JUnit) | Tested + real | requires `--allow-repo-code` |
 | gitleaks adapter | Tested + real | verified with gitleaks 8.30.1 locally and in the CI `secrets` job |
-| semgrep (local rules / registry) adapters | Verified manually with real semgrep 1.182.0; fixture tests in CI | findings, clean, invalid rules and registry (network) checked by hand; no automated real-tool test yet. Semgrep tolerates some syntax errors without reporting them |
+| semgrep-local adapter | Tested + real | real semgrep 1.182.0 in the CI `semgrep` job (findings, clean, invalid rules); semgrep tolerates some syntax errors without reporting them |
+| semgrep-registry adapter | Tested (fixtures) + manual real run | needs the network to download `p/default`; verified by hand with 1.182.0, not in CI |
 | npm audit adapter | Implemented, unverified here | network-dependent; not run |
 | Release readiness (configurable policy) | Tested | |
 | Inventory-derived Mermaid diagram | Tested | relationships labelled verified/inferred |

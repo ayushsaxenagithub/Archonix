@@ -184,3 +184,65 @@ def test_real_osv_scanner_on_vulnerable_lockfile(tmp_path: Path) -> None:
     assert (ex["status"], ex["outcome"], ex["exit_code"]) == ("completed", "findings", 1)
     assert any(f["source"]["rule_id"] == "GHSA-29mw-wpgm-hmr9" for f in report["findings"])
     assert "--no-call-analysis=all" in ex["argv"]
+
+
+SEMGREP_RULES = """\
+rules:
+  - id: subprocess-shell-true
+    languages: [python]
+    severity: ERROR
+    message: subprocess call with shell=True
+    metadata:
+      confidence: HIGH
+      cwe: ["CWE-78: OS Command Injection"]
+    pattern: subprocess.$F(..., shell=True, ...)
+  - id: legacy-rounding
+    languages: [python]
+    severity: INFO
+    message: legacy rounding helper
+    pattern: round($X, 2)
+"""
+
+
+@needs("semgrep")
+def test_real_semgrep_local_rules(service: Path, tmp_path: Path) -> None:
+    """Offline: rules are committed in the repository, so semgrep needs no network."""
+    (service / ".semgrep.yml").write_text(SEMGREP_RULES)
+    report = run_report(service, tmp_path / "out", "semgrep-local")
+    ex = report["executions"][0]
+    assert (ex["status"], ex["outcome"], ex["exit_code"]) == ("completed", "findings", 0)
+    assert ex["tool_version"]
+    by_rule = {f["source"]["rule_id"]: f for f in report["findings"]}
+    shell = by_rule["subprocess-shell-true"]
+    assert (shell["severity"], shell["confidence"]) == ("high", "high")
+    assert shell["location"] == {
+        "path": "app/ops.py",
+        "start_line": 11,
+        "end_line": 11,
+        "start_column": shell["location"]["start_column"],
+        "symbol": None,
+    }
+    assert "CWE-78: OS Command Injection" in shell["references"]
+    assert (by_rule["legacy-rounding"]["severity"], by_rule["legacy-rounding"]["confidence"]) == (
+        "low",
+        "unknown",
+    )
+
+
+@needs("semgrep")
+def test_real_semgrep_clean_and_invalid_rules(service: Path, tmp_path: Path) -> None:
+    (service / ".semgrep.yml").write_text(
+        "rules:\n  - id: never\n    languages: [python]\n    severity: INFO\n"
+        "    message: x\n    pattern: this_function_does_not_exist_anywhere()\n"
+    )
+    clean = run_report(service, tmp_path / "clean", "semgrep-local")
+    assert clean["executions"][0]["outcome"] == "clean" and clean["findings"] == []
+    (service / ".semgrep.yml").write_text(
+        "rules:\n  - id: bad\n    languages: [python]\n    severity: INFO\n"
+        "    message: x\n    pattern: (((\n"
+    )
+    broken = run_report(service, tmp_path / "broken", "semgrep-local")
+    ex = broken["executions"][0]
+    assert ex["status"] == "completed" and ex["outcome"] == "tool-error"
+    assert ex["exit_code"] not in (0, 1)
+    assert broken["summary"]["failed"] == 1
