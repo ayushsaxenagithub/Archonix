@@ -254,13 +254,17 @@ def test_nested_artifacts_are_redacted_and_gaps_reported(tmp_path: Path) -> None
     n, notes = _redact_artifacts(tmp_path, Redactor.from_environment(env={}))
     assert n == 1
     assert value not in (tmp_path / "nested" / "out.json").read_text()
-    assert notes == ["retained artifact blob.bin is not UTF-8 text and was not redacted"]
+    assert notes == [
+        "retained artifact blob.bin is not UTF-8 text, could not be redacted, and was removed"
+    ]
+    assert not (tmp_path / "blob.bin").exists()
 
 
 def test_oversized_artifact_is_reported_not_silently_kept(tmp_path: Path) -> None:
     (tmp_path / "big.txt").write_text("token=synthetic-value-999 " * 10)
     _, notes = _redact_artifacts(tmp_path, Redactor.from_environment(env={}), limit=10)
-    assert notes and "exceeds 10 bytes" in notes[0]
+    assert notes and "exceeds 10 bytes" in notes[0] and "removed" in notes[0]
+    assert not (tmp_path / "big.txt").exists()
 
 
 # --- D6: unreadable inputs produced tracebacks ---------------------------------------
@@ -298,3 +302,60 @@ def test_every_third_party_import_is_declared() -> None:
                 imported.add(node.module.split(".")[0])
     third_party = {m for m in imported if m not in sys.stdlib_module_names and m != "archonix"}
     assert third_party - optional <= declared, third_party - optional - declared
+
+
+# --- Review issue 1: artifacts were not finalized when a check timed out --------------
+
+
+@posix_only
+def test_timed_out_check_artifacts_are_redacted_and_listed(
+    make_repo: Callable[..., Path],
+    fake_bin: Callable[..., Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    secret = "synthetic-" + "token-" + "9f8e7d6c5b4a"  # assembled at runtime
+    fake_bin(
+        "pytest", report_flag="--junitxml", report=f'<testsuites api_key="{secret}"/>', sleep=30
+    )
+    monkeypatch.setenv("ARCHONIX_TIMEOUT_SECONDS", "1")
+    root = make_repo(PY_REPO)
+    settings = load_settings(root, mode="audit", cli_permissions={"repo_code": True})
+    plans = plan_checks(root, build_inventory(root, settings), settings, ["pytest"])
+    out = tmp_path / "out"
+    executions, _, _ = execute_plan(
+        root, plans, settings, artifact_dir=out, redactor=Redactor.from_environment(env={})
+    )
+    ex = executions[0]
+    assert ex["status"] == "timeout"
+    assert [Path(a["path"]).name for a in ex["artifacts"]] == ["pytest-junit.xml"]
+    assert secret not in (out / "artifacts" / "pytest" / "pytest-junit.xml").read_text()
+    assert ex["redaction"]["replacements"] >= 1
+
+
+def test_adapter_exception_still_finalizes_artifacts(
+    make_repo: Callable[..., Path],
+    fake_bin: Callable[..., Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from archonix.adapters import ADAPTERS
+
+    secret = "synthetic-" + "token-" + "1a2b3c4d5e6f"
+    fake_bin("pytest", report_flag="--junitxml", report=f'<x api_key="{secret}"/>')
+
+    def boom(*_: object) -> None:
+        raise RuntimeError("parser crashed")
+
+    monkeypatch.setattr(ADAPTERS["pytest"], "interpret", boom)
+    root = make_repo(PY_REPO)
+    settings = load_settings(root, mode="audit", cli_permissions={"repo_code": True})
+    plans = plan_checks(root, build_inventory(root, settings), settings, ["pytest"])
+    out = tmp_path / "out"
+    executions, findings, _ = execute_plan(
+        root, plans, settings, artifact_dir=out, redactor=Redactor.from_environment(env={})
+    )
+    ex = executions[0]
+    assert ex["outcome"] == "parse-error" and "parser crashed" in ex["outcome_detail"]
+    assert findings == [] and ex["artifacts"]
+    assert secret not in (out / "artifacts" / "pytest" / "pytest-junit.xml").read_text()

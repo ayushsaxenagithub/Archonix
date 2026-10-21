@@ -104,18 +104,34 @@ def _drain(pipe: IO[bytes], sink: CapturedStream, limit: int) -> None:
     pipe.close()
 
 
+def _group_alive(pgid: int) -> bool:
+    try:
+        os.killpg(pgid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
 def _terminate(proc: subprocess.Popen[bytes]) -> None:
-    """Terminate the child and its process group, escalating to SIGKILL."""
+    """Terminate the child and its whole process group, escalating to SIGKILL.
+
+    The parent exiting after SIGTERM is not enough: descendants in the same group may
+    ignore SIGTERM. The group is polled for the grace period and then sent SIGKILL
+    regardless, so no member outlives the timeout.
+    """
     if os.name == "posix":
+        pgid = proc.pid  # start_new_session=True makes the child a group leader
         with contextlib.suppress(ProcessLookupError, PermissionError):
-            os.killpg(proc.pid, signal.SIGTERM)
-        try:
-            proc.wait(timeout=KILL_GRACE_SECONDS)
-            return
-        except subprocess.TimeoutExpired:
-            pass
+            os.killpg(pgid, signal.SIGTERM)
+        deadline = time.monotonic() + KILL_GRACE_SECONDS
+        while time.monotonic() < deadline:
+            if proc.poll() is not None and not _group_alive(pgid):
+                break
+            time.sleep(0.05)
         with contextlib.suppress(ProcessLookupError, PermissionError):
-            os.killpg(proc.pid, signal.SIGKILL)
+            os.killpg(pgid, signal.SIGKILL)
     else:  # pragma: no cover - exercised only on Windows
         proc.kill()
     proc.wait()

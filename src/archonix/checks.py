@@ -104,10 +104,12 @@ def _redact_findings(findings: list[dict[str, Any]], redactor: Redactor) -> int:
 def _redact_artifacts(
     directory: Path, redactor: Redactor, limit: int = 20_000_000
 ) -> tuple[int, list[str]]:
-    """Redact retained text artifacts in place, recursively, without following symlinks.
+    """Redact retained artifacts in place, recursively, without following symlinks.
 
-    Returns (replacements, notes). Files that could not be redacted (binary, oversized,
-    unreadable, symlinks) are left in place and named in the notes so the report says so.
+    Returns (replacements, notes). A file that cannot be redacted (binary, oversized,
+    unreadable, or a symlink) cannot be retained safely, so it is removed from the
+    artifact directory and named in the notes. Only Archonix's own artifact directory
+    is touched; repository files are never deleted.
     """
     count = 0
     notes: list[str] = []
@@ -115,27 +117,43 @@ def _redact_artifacts(
         for name in sorted(files):
             path = Path(current) / name
             rel = path.relative_to(directory).as_posix()
+            reason: str | None = None
             if path.is_symlink():
-                notes.append(f"retained artifact {rel} is a symlink and was not redacted")
-                continue
-            try:
-                if path.stat().st_size > limit:
-                    notes.append(
-                        f"retained artifact {rel} exceeds {limit} bytes and was not redacted"
-                    )
-                    continue
-                text = path.read_text(encoding="utf-8")
-            except UnicodeDecodeError:
-                notes.append(f"retained artifact {rel} is not UTF-8 text and was not redacted")
-                continue
-            except OSError as exc:
-                notes.append(f"retained artifact {rel} could not be read for redaction ({exc})")
+                reason = "is a symlink"
+            else:
+                try:
+                    if path.stat().st_size > limit:
+                        reason = f"exceeds {limit} bytes"
+                    else:
+                        text = path.read_text(encoding="utf-8")
+                except UnicodeDecodeError:
+                    reason = "is not UTF-8 text"
+                except OSError as exc:
+                    reason = f"could not be read ({exc.strerror or exc})"
+            if reason is not None:
+                path.unlink(missing_ok=True)
+                notes.append(
+                    f"retained artifact {rel} {reason}, could not be redacted, and was removed"
+                )
                 continue
             redacted, n = redactor.redact(text)
             if n:
                 path.write_text(redacted, encoding="utf-8")
                 count += n
     return count, notes
+
+
+def _finalize_artifacts(
+    work: Path, tool: str, redactor: Redactor
+) -> tuple[list[dict[str, Any]], int, list[str]]:
+    """Redact and list every retained artifact. Runs on every exit path of a check."""
+    replaced, notes = _redact_artifacts(work, redactor)
+    artifacts = [
+        {"path": str(p), "description": f"{tool} output", "retained": True}
+        for p in sorted(work.rglob("*"))
+        if p.is_file() and not p.is_symlink()
+    ]
+    return artifacts, replaced, notes
 
 
 def _record(
@@ -150,6 +168,7 @@ def _record(
     version: str | None = None,
     artifacts: list[dict[str, Any]] | None = None,
     redactor: Redactor | None = None,
+    extra_limitations: list[str] | None = None,
 ) -> dict[str, Any]:
     replacements = 0
     stdout = stderr = None
@@ -166,7 +185,7 @@ def _record(
         red = [redactor.redact(a) for a in argv]
         argv = [a for a, _ in red]
         replacements += sum(n for _, n in red)
-    limitations = list(parsed.limitations) if parsed else []
+    limitations = [*(parsed.limitations if parsed else []), *(extra_limitations or [])]
     if redactor is not None:
         # Details and limitations can quote tool output (for example an npm error that
         # contains a registry URL with credentials), so they are redacted too.
@@ -195,6 +214,14 @@ def _record(
         "test_totals": parsed.test_totals if parsed else None,
         "findings_count": len(parsed.findings) if parsed and outcome != "parse-error" else None,
         "parse_limitations": limitations,
+        "coverage": None
+        if parsed is None or outcome == "parse-error"
+        else {
+            "complete": parsed.complete,
+            "detail": redactor.redact(parsed.coverage_detail)[0]
+            if redactor is not None and parsed.coverage_detail
+            else parsed.coverage_detail,
+        },
         "requires": plan.adapter.requires.as_dict(),
     }
 
@@ -233,6 +260,10 @@ def execute_plan(
             else Path(tempfile.mkdtemp(prefix=f"archonix-{plan.adapter.id}-"))
         )
         work.mkdir(parents=True, exist_ok=True)
+        version: str | None = None
+        result: RunResult | None = None
+        parsed: ParseOutcome | None = None
+        failure: str | None = None
         try:
             version = tool_version(plan.adapter.executable, plan.adapter.version_args)
             ctx = Context(
@@ -250,42 +281,31 @@ def execute_plan(
                 timeout=cfg.timeout_seconds or settings.timeout_seconds,
                 max_output_bytes=settings.max_output_bytes,
             )
-            if result.status != "completed":
-                executions.append(
-                    _record(
-                        plan,
-                        status=result.status,
-                        outcome="not-run" if result.status == "missing-tool" else "tool-error",
-                        detail=result.error or result.status,
-                        cwd=root,
-                        result=result,
-                        version=version,
-                        redactor=redactor,
-                    )
-                )
-                continue
-            parsed = plan.adapter.interpret(result, ctx)
-            if parsed.outcome != "parse-error":
-                replaced = _redact_findings(parsed.findings, redactor)
-                findings.extend(parsed.findings)
-            else:
-                replaced = 0
+            if result.status == "completed":
+                parsed = plan.adapter.interpret(result, ctx)
+        except Exception as exc:  # one broken adapter must not lose the whole run
+            failure = f"{type(exc).__name__}: {exc}"
+        finally:
+            # Artifacts are finalized on every path (timeouts and errors included) so that
+            # a tool cannot leave unredacted output behind in a retained directory.
             if retained:
-                n_artifacts, notes = _redact_artifacts(work, redactor)
-                replaced += n_artifacts
-                parsed.limitations.extend(notes)
-            artifacts = (
-                [
-                    {
-                        "path": str(p),
-                        "description": f"{plan.adapter.tool} output",
-                        "retained": retained,
-                    }
-                    for p in sorted(work.iterdir())
-                ]
-                if retained
-                else []
+                artifacts, art_replaced, art_notes = _finalize_artifacts(
+                    work, plan.adapter.tool, redactor
+                )
+            else:
+                artifacts, art_replaced, art_notes = [], 0, []
+                shutil.rmtree(work, ignore_errors=True)
+
+        if parsed is not None and result is not None:
+            replaced = (
+                _redact_findings(parsed.findings, redactor)
+                if parsed.outcome != "parse-error"
+                else 0
             )
+            if parsed.outcome != "parse-error":
+                findings.extend(parsed.findings)
+            if parsed.complete is False:
+                parsed.detail += " (partial scan)"
             record = _record(
                 plan,
                 status="completed",
@@ -297,10 +317,38 @@ def execute_plan(
                 version=version,
                 artifacts=artifacts,
                 redactor=redactor,
+                extra_limitations=art_notes,
             )
-            record["redaction"]["replacements"] += replaced
-            executions.append(record)
-        finally:
-            if not retained:
-                shutil.rmtree(work, ignore_errors=True)
+            record["redaction"]["replacements"] += replaced + art_replaced
+        elif failure is not None:
+            record = _record(
+                plan,
+                status=result.status if result else "failed-to-start",
+                outcome="parse-error" if result and result.status == "completed" else "tool-error",
+                detail=f"adapter error: {failure}",
+                cwd=root,
+                result=result,
+                version=version,
+                artifacts=artifacts,
+                redactor=redactor,
+                extra_limitations=art_notes,
+            )
+            record["redaction"]["replacements"] += art_replaced
+        else:
+            if result is None:  # pragma: no cover - run() either returns or raises
+                raise RuntimeError("check finished without a result")
+            record = _record(
+                plan,
+                status=result.status,
+                outcome="not-run" if result.status == "missing-tool" else "tool-error",
+                detail=result.error or result.status,
+                cwd=root,
+                result=result,
+                version=version,
+                artifacts=artifacts,
+                redactor=redactor,
+                extra_limitations=art_notes,
+            )
+            record["redaction"]["replacements"] += art_replaced
+        executions.append(record)
     return executions, findings, skipped

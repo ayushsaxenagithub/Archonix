@@ -29,4 +29,7 @@ Never run destructive tests against production or real customer data.
 Record evidence in the ledger (`verification.evidence[]`), using `check:<check_id>` to
 link to a report execution, or a test path/manual note otherwise. Then:
 `archonix requirements matrix docs/requirements.json --report .archonix/tests/report.json`.
-Criteria with no evidence are reported as `missing`, not passed.
+Criteria with no evidence are reported as `missing`, not passed. `check:<id>` evidence is
+resolved against the supplied reports: a check absent from them, not run or unparsed is
+`unknown`; failed tests are `fail` even if the ledger says pass. Other references are
+shown with basis `recorded` (an assertion, not machine-checked evidence).

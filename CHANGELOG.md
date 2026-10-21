@@ -9,6 +9,34 @@ behaviour; patch versions are fixes).
 
 ### Fixed
 
+- Incomplete scans can no longer satisfy readiness. Execution records gain an optional
+  `coverage` field (`complete`, `detail`). bandit and semgrep set `complete: false` when
+  they report targets they could not analyse, and the outcome detail says "(partial
+  scan)". A required check with a partial scan, the `max_severity` rule and
+  `allow_unparsed_checks = false` all become `unknown` unless the policy sets the new
+  `allow_partial_scans = true`. Previously bandit skipping a syntax-invalid file produced
+  `clean` and a `ready` verdict.
+
+- Readiness `require_tests` no longer passes when every test was skipped. It now requires
+  completed, parseable test runs with known and consistent counts and at least one
+  executed test. Previously the total count, including skipped tests, was enough.
+
+- Traceability matrix resolves `check:<id>` evidence before assigning a result: missing
+  or unrun checks are `unknown` and failed tests are `fail`, even when the ledger records
+  `pass`. Previously the recorded value decided the result. Rows gain a `basis` field
+  (`verified`, `recorded`, `mixed`).
+
+- Retained artifacts are redacted and listed on every exit path of a check, including
+  timeouts and adapter errors. Previously, a timed-out tool's report kept any secret it
+  contained and was missing from the execution record. Artifacts that cannot be redacted
+  (binary, oversized, unreadable, symlinks) are now removed from the output directory and
+  reported, rather than kept. An adapter that raises is recorded as `parse-error` instead
+  of aborting the whole run.
+
+- Timeout cleanup sends SIGKILL to the whole process group after the grace period even
+  when the direct child already exited, so descendants that ignore SIGTERM no longer
+  survive a timeout.
+
 - Skill: explicit rule for where reports and artifacts go (named location, else
   `.archonix/<run>/` when repository changes are allowed, else a fresh temporary
   directory, else stdout), and to state the path used. Found in acceptance testing:

@@ -22,7 +22,9 @@ archonix readiness assess --policy release-policy.toml \
 
 Policy rules (TOML `[rules]`): `required_checks`, `max_severity`, `require_tests`,
 `require_revision`, `require_clean_worktree`, `require_must_requirements_verified`,
-`allow_unparsed_checks`. Each rule is pass, fail or unknown. Any fail → `not-ready`; any
+`allow_unparsed_checks`, `allow_partial_scans`. Each rule is pass, fail or unknown.
+`require_tests` passes only when test runs completed, counts are known and consistent,
+at least one test actually executed (skipped tests do not count) and none failed. Any fail → `not-ready`; any
 unknown → `incomplete`; only all-pass → `ready`. Missing evidence is never a pass.
 
 ## Also check (manual)

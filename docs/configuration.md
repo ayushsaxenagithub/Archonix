@@ -89,4 +89,6 @@ Default exclusions: `.git`, `.hg`, `.svn`, `node_modules`, `.venv`, `venv`, `env
 
 Separate TOML file passed with `--policy`; see
 [`examples/readiness-policy.toml`](../examples/readiness-policy.toml). Rules not listed
-in a custom policy are not evaluated; unknown rule names are an error.
+in a custom policy are not evaluated; unknown rule names are an error. A required check
+whose tool reported targets it could not analyse (`coverage.complete = false`) is
+`unknown`, and so is `max_severity`, unless the policy sets `allow_partial_scans = true`.

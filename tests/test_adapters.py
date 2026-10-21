@@ -6,6 +6,7 @@ test_integration_real.py.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -191,3 +192,24 @@ def test_every_adapter_documents_itself() -> None:
     for adapter in ADAPTERS.values():
         d = adapter.describe()
         assert d["exit_codes"] and d["description"] and d["notes"] and d["status"]
+
+
+# --- Review issue 4: incomplete scans must be structured, not just a limitation -------
+
+
+def test_bandit_analysis_errors_mark_scan_incomplete(ctx: Context) -> None:
+    doc = {"results": [], "errors": [{"filename": "/repo/broken.py", "reason": "syntax error"}]}
+    out = ADAPTERS["bandit"].interpret(result(json.dumps(doc), 0), ctx)
+    assert out.outcome == "clean" and out.complete is False
+    assert out.coverage_detail == "bandit could not analyse 1 file(s): broken.py"
+    clean = ADAPTERS["bandit"].interpret(result('{"results": [], "errors": []}', 0), ctx)
+    assert clean.complete is True
+
+
+def test_semgrep_errors_mark_scan_incomplete(ctx: Context) -> None:
+    out = ADAPTERS["semgrep-local"].interpret(
+        result(fixture_text("tool-output", "semgrep-findings.json")), ctx
+    )
+    assert out.outcome == "findings" and out.complete is False
+    full = ADAPTERS["semgrep-local"].interpret(result('{"results": [], "errors": []}'), ctx)
+    assert full.complete is True

@@ -26,6 +26,7 @@ DEFAULT_POLICY: dict[str, Any] = {
         "require_clean_worktree": True,
         "require_must_requirements_verified": True,
         "allow_unparsed_checks": False,
+        "allow_partial_scans": False,
     },
 }
 KNOWN_RULES = set(DEFAULT_POLICY["rules"])
@@ -63,6 +64,67 @@ def _rule(
     }
 
 
+COUNT_KEYS = ("total", "passed", "failed", "skipped", "errored")
+
+
+def _partial(execution: dict[str, Any]) -> bool:
+    """True when the tool reported targets it could not analyse (coverage.complete=false)."""
+    return (execution.get("coverage") or {}).get("complete") is False
+
+
+def _tests_rule(executions: list[dict[str, Any]]) -> dict[str, Any]:
+    """Tests ran to completion, at least one test actually executed, none failed.
+
+    Skipped tests do not count as executed. Unknown or inconsistent counts, and test
+    runs that did not complete or could not be parsed, make the rule unknown; any
+    failing or erroring test makes it fail.
+    """
+    desc = "automated tests ran to completion, at least one test executed, none failed"
+    runs = [e for e in executions if e.get("test_totals")]
+    if not runs:
+        return _rule("tests", desc, "unknown", "no test results in the supplied reports")
+    totals = [e["test_totals"] for e in runs]
+    if any((t["failed"] or 0) > 0 or (t["errored"] or 0) > 0 for t in totals):
+        return _rule(
+            "tests", desc, "fail", "failing or erroring tests reported", [e["id"] for e in runs]
+        )
+    incomplete = [
+        e
+        for e in runs
+        if e["status"] != "completed" or e["outcome"] in {"tool-error", "parse-error"}
+    ]
+    if incomplete:
+        return _rule(
+            "tests",
+            desc,
+            "unknown",
+            "test run did not complete cleanly: "
+            + ", ".join(f"{e['check_id']} {e['status']}/{e['outcome']}" for e in incomplete),
+        )
+    if any(t[k] is None for t in totals for k in COUNT_KEYS):
+        return _rule("tests", desc, "unknown", "test counts unknown")
+    inconsistent = [
+        e["check_id"]
+        for e, t in zip(runs, totals, strict=True)
+        if t["passed"] + t["failed"] + t["skipped"] + t["errored"] != t["total"]
+    ]
+    if inconsistent:
+        return _rule(
+            "tests", desc, "unknown", f"inconsistent test counts in {', '.join(inconsistent)}"
+        )
+    executed = sum(t["total"] - t["skipped"] for t in totals)
+    skipped = sum(t["skipped"] for t in totals)
+    if executed == 0:
+        return _rule("tests", desc, "unknown", f"no test actually executed ({skipped} skipped)")
+    return _rule(
+        "tests",
+        desc,
+        "pass",
+        f"{executed} executed ({sum(t['passed'] for t in totals)} passed, {skipped} skipped)",
+        [e["id"] for e in runs],
+    )
+
+
 def assess(
     policy: dict[str, Any],
     policy_source: str,
@@ -78,6 +140,8 @@ def assess(
             executions[e["check_id"]] = e
         findings += rep.get("findings", [])
     names = [n for n, _ in reports]
+    allow_partial = bool(rules_cfg.get("allow_partial_scans", False))
+    partial_scans = [e for e in executions.values() if _partial(e)]
 
     for check_id in rules_cfg.get("required_checks", []):
         e = executions.get(check_id)
@@ -106,6 +170,16 @@ def assess(
                     desc,
                     "unknown",
                     f"{e['status']}/{e['outcome']}: {e['outcome_detail']}",
+                )
+            )
+        elif _partial(e) and not allow_partial:
+            rules.append(
+                _rule(
+                    f"check:{check_id}",
+                    desc,
+                    "unknown",
+                    f"partial scan: {(e.get('coverage') or {}).get('detail') or 'incomplete'} "
+                    "(set allow_partial_scans = true to accept partial coverage)",
                 )
             )
         else:
@@ -147,6 +221,16 @@ def assess(
                     [f["id"] for f in blocking[:20]],
                 )
             )
+        elif partial_scans and not allow_partial:
+            rules.append(
+                _rule(
+                    "max-severity",
+                    desc,
+                    "unknown",
+                    "findings may be incomplete; partial scans: "
+                    + ", ".join(e["check_id"] for e in partial_scans),
+                )
+            )
         elif unknown_sev:
             rules.append(
                 _rule(
@@ -167,11 +251,15 @@ def assess(
             )
 
     if not rules_cfg.get("allow_unparsed_checks", True):
-        bad = [e for e in executions.values() if e["outcome"] in {"parse-error", "tool-error"}]
+        bad = [
+            e
+            for e in executions.values()
+            if e["outcome"] in {"parse-error", "tool-error"} or (_partial(e) and not allow_partial)
+        ]
         rules.append(
             _rule(
                 "no-unparsed-checks",
-                "every executed check produced interpretable output",
+                "every executed check produced interpretable, complete output",
                 "unknown" if bad else ("pass" if executions else "unknown"),
                 ", ".join(f"{e['check_id']}: {e['outcome_detail']}" for e in bad)
                 or ("all executed checks parsed" if executions else "no executions"),
@@ -179,28 +267,7 @@ def assess(
         )
 
     if rules_cfg.get("require_tests"):
-        test_runs = [e for e in executions.values() if e.get("test_totals")]
-        desc = "automated tests ran, at least one test executed, none failed"
-        if not test_runs:
-            rules.append(_rule("tests", desc, "unknown", "no test results in the supplied reports"))
-        else:
-            totals = [e["test_totals"] for e in test_runs]
-            if any((t["failed"] or 0) > 0 or (t["errored"] or 0) > 0 for t in totals):
-                rules.append(_rule("tests", desc, "fail", "failing or erroring tests reported"))
-            elif any(t["total"] is None for t in totals):
-                rules.append(_rule("tests", desc, "unknown", "test totals unknown"))
-            elif sum(t["total"] for t in totals) == 0:
-                rules.append(_rule("tests", desc, "unknown", "zero tests executed"))
-            else:
-                rules.append(
-                    _rule(
-                        "tests",
-                        desc,
-                        "pass",
-                        f"{sum(t['total'] for t in totals)} tests",
-                        [e["id"] for e in test_runs],
-                    )
-                )
+        rules.append(_tests_rule(list(executions.values())))
 
     revisions = {rep["repository"].get("revision") for _, rep in reports}
     if rules_cfg.get("require_revision"):

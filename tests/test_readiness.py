@@ -158,3 +158,143 @@ def test_cli_exit_codes() -> None:
         == 1
     )
     assert main(["readiness", "assess"]) == 4
+
+
+# --- Review issue 3: all-skipped tests satisfied require_tests ------------------------
+
+TESTS_ONLY = {"name": "t", "rules": {"require_tests": True}}
+
+
+def _tests(
+    totals: dict[str, int | None], status: str = "completed", outcome: str = "clean"
+) -> dict[str, Any]:
+    return report(
+        executions=[
+            {
+                "id": "e",
+                "check_id": "pytest",
+                "status": status,
+                "outcome": outcome,
+                "outcome_detail": "",
+                "test_totals": totals,
+            }
+        ]
+    )
+
+
+@pytest.mark.parametrize(
+    "totals, status, outcome, expected, why",
+    [
+        (
+            {"total": 3, "passed": 0, "failed": 0, "skipped": 3, "errored": 0},
+            "completed",
+            "clean",
+            "unknown",
+            "no test actually executed",
+        ),
+        (
+            {"total": 3, "passed": 1, "failed": 0, "skipped": 1, "errored": 0},
+            "completed",
+            "clean",
+            "unknown",
+            "inconsistent",
+        ),
+        (
+            {"total": 3, "passed": None, "failed": 0, "skipped": 0, "errored": 0},
+            "completed",
+            "clean",
+            "unknown",
+            "counts unknown",
+        ),
+        (
+            {"total": 2, "passed": 2, "failed": 0, "skipped": 0, "errored": 0},
+            "timeout",
+            "tool-error",
+            "unknown",
+            "did not complete",
+        ),
+        (
+            {"total": 2, "passed": 2, "failed": 0, "skipped": 0, "errored": 0},
+            "completed",
+            "parse-error",
+            "unknown",
+            "did not complete",
+        ),
+        (
+            {"total": 4, "passed": 1, "failed": 0, "skipped": 2, "errored": 1},
+            "completed",
+            "tests-failed",
+            "fail",
+            "failing or erroring",
+        ),
+        (
+            {"total": 4, "passed": 2, "failed": 0, "skipped": 2, "errored": 0},
+            "completed",
+            "clean",
+            "pass",
+            "2 executed",
+        ),
+    ],
+)
+def test_tests_rule_requires_executed_completed_consistent_runs(
+    totals: dict, status: str, outcome: str, expected: str, why: str
+) -> None:
+    rule = verdict(_tests(totals, status, outcome), TESTS_ONLY)["rules"][0]
+    assert (rule["result"], why in rule["detail"]) == (expected, True), rule
+
+
+def test_reported_all_skipped_case_is_no_longer_ready() -> None:
+    policy = {"name": "t", "rules": {"required_checks": ["pytest"], "require_tests": True}}
+    all_skipped = _tests({"total": 3, "passed": 0, "failed": 0, "skipped": 3, "errored": 0})
+    assert verdict(all_skipped, policy)["verdict"] == "incomplete"
+
+
+# --- Review issue 4: incomplete scans satisfied readiness ------------------------------
+
+
+def _bandit(complete: bool | None) -> dict[str, Any]:
+    return report(
+        executions=[
+            {
+                "id": "e-b",
+                "check_id": "bandit",
+                "status": "completed",
+                "outcome": "clean",
+                "outcome_detail": "no findings (partial scan)",
+                "test_totals": None,
+                "coverage": {"complete": complete, "detail": "bandit could not analyse 1 file(s)"},
+            }
+        ]
+    )
+
+
+PARTIAL_POLICY = {
+    "name": "t",
+    "rules": {
+        "required_checks": ["bandit"],
+        "max_severity": "medium",
+        "allow_unparsed_checks": False,
+    },
+}
+
+
+def test_partial_required_scan_is_incomplete_not_ready() -> None:
+    out = verdict(_bandit(False), PARTIAL_POLICY)
+    rules = {r["id"]: r for r in out["rules"]}
+    assert out["verdict"] == "incomplete"
+    assert (
+        rules["check:bandit"]["result"] == "unknown"
+        and "partial scan" in rules["check:bandit"]["detail"]
+    )
+    assert rules["max-severity"]["result"] == "unknown"
+    assert rules["no-unparsed-checks"]["result"] == "unknown"
+
+
+def test_partial_scans_can_be_explicitly_accepted() -> None:
+    policy = {"name": "t", "rules": {**PARTIAL_POLICY["rules"], "allow_partial_scans": True}}
+    assert verdict(_bandit(False), policy)["verdict"] == "ready"
+
+
+@pytest.mark.parametrize("complete", [True, None])
+def test_complete_or_unreported_coverage_is_not_penalised(complete: bool | None) -> None:
+    assert verdict(_bandit(complete), PARTIAL_POLICY)["verdict"] == "ready"

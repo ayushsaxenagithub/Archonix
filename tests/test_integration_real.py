@@ -253,3 +253,34 @@ def test_real_semgrep_clean_and_invalid_rules(service: Path, tmp_path: Path) -> 
     assert ex["status"] == "completed" and ex["outcome"] == "tool-error"
     assert ex["exit_code"] not in (0, 1)
     assert broken["summary"]["failed"] == 1
+
+
+@needs("bandit")
+def test_real_bandit_partial_scan_is_not_ready(tmp_path: Path) -> None:
+    """Reported case: a syntax-invalid file made bandit skip it, yet readiness was ready."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "ok.py").write_text("x = 1\n")
+    (repo / "broken.py").write_text("def broken(:\n    pass\n")
+    report = run_report(repo, tmp_path / "out", "bandit")
+    ex = report["executions"][0]
+    assert ex["outcome"] == "clean" and ex["coverage"]["complete"] is False
+    assert "partial scan" in ex["outcome_detail"]
+    policy = tmp_path / "policy.toml"
+    policy.write_text(
+        'name = "t"\n[rules]\nrequired_checks = ["bandit"]\n'
+        'max_severity = "medium"\nallow_unparsed_checks = false\n'
+    )
+    code = main(
+        [
+            "readiness",
+            "assess",
+            "--policy",
+            str(policy),
+            "--report",
+            str(tmp_path / "out" / "report.json"),
+            "--format",
+            "json",
+        ]
+    )
+    assert code == 4  # incomplete, not ready
