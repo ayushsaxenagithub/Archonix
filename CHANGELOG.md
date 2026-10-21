@@ -7,6 +7,15 @@ behaviour; patch versions are fixes).
 
 ## [Unreleased]
 
+### Fixed
+
+- Skill: the bug-investigation and implementation workflows (and `SKILL.md`) now name the
+  CLI test-verification command (`archonix check run . --mode audit --allow-repo-code
+  --checks pytest`, only when authorized) and require reporting tests as **not run** with
+  the exact command otherwise. Found in acceptance testing with Claude Code: a correct
+  bug fix was left unverified because the bug workflow did not point to the permitted
+  CLI path. With the fix, the same task reproduced the bug and verified the fix.
+
 ### Added
 
 - `osv-scanner` check: dependency vulnerabilities from lockfiles and requirements files in

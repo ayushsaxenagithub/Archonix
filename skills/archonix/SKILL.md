@@ -69,12 +69,15 @@ If `archonix` is installed (`archonix --version`), prefer it for repeatable evid
 archonix inventory . --format md                    # static stack detection, no execution
 archonix check plan . --mode audit                  # what would run, and why/why not
 archonix check run . --mode audit --out-dir .archonix/run-1   # run permitted checks
+archonix check run . --mode audit --allow-repo-code --checks pytest   # run tests (authorized only)
 archonix requirements validate docs/requirements.json
 archonix readiness assess --report .archonix/run-1/report.json --ledger docs/requirements.json
 ```
 
 Add `--allow-repo-code` (tests) or `--allow-network` (registry-backed scanners) only when
-the user has authorized it. Without the CLI, follow the same workflows manually and use
+the user has authorized it. To verify a code change, run the tests: through the CLI as
+above, or with the project's own test command. If no permitted way to run them exists,
+report the tests as **not run** and give the exact command. Without the CLI, follow the same workflows manually and use
 the JSON schemas in `schemas/` and the templates in `templates/` next to this file.
 
 ## 5. Shared artifacts across workflows

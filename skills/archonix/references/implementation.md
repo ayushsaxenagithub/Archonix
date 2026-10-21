@@ -8,7 +8,11 @@ explicit user request that covers the change).
 3. Get a working vertical slice early.
 4. Add or update meaningful tests that would fail without the change.
 5. Implement the smallest coherent change in the existing style and stack.
-6. Run the relevant checks (tests, lint, types); record commands and outcomes.
+6. Run the relevant checks (tests, lint, types); record commands and outcomes. With the
+   CLI: `archonix check run . --mode audit --checks ruff,bandit` for static checks, and
+   `archonix check run . --mode audit --allow-repo-code --checks pytest` for tests when
+   running repository code is authorized. If tests cannot be run, report them as
+   **not run** with the exact command, never as passing.
 7. Inspect the diff for unintended changes, debug code and secrets.
 8. Update affected documentation only.
 9. Update the ledger status (`implemented`, then `verified` with evidence).
