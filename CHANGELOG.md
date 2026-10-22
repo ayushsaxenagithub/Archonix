@@ -14,6 +14,24 @@ behaviour; patch versions are fixes).
   Previously a committed `.archonix -> ../somewhere` link redirected reports and
   artifacts outside the repository.
 
+### Changed
+
+- Skill: a whole-codebase audit workflow (`references/codebase-audit.md`, routed from
+  "check / audit / review the whole codebase"):
+  - turn documented promises into checks;
+  - review by risk;
+  - reproduce every finding before reporting it;
+  - triage scanner noise and failing tests.
+- Skill policy fixes from an external review of the skill:
+  - local reproduction against the code under review is encouraged, and exploits are
+    banned only against live, shared or other people's systems; "verified" includes
+    "reproduced";
+  - installing locked dependencies into a fresh isolated environment is covered by
+    authorization to run repository code plus network access;
+  - untrusted repositories get reports in a temporary directory outside them;
+  - failing tests are triaged (rerun alone, check the environment, classify) before
+    being called bugs.
+
 ### Fixed
 
 - The gitleaks check applies Archonix exclusions (e.g. `__pycache__`) through a generated
