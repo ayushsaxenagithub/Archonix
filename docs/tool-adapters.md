@@ -38,6 +38,10 @@ severity in `source`.
   criterion IDs in its name, for the traceability matrix.
   Exit 5 (no tests collected) is a `tool-error`, not a pass. A missing or malformed JUnit
   file leaves all counts `null`.
+- **gitleaks**: Archonix exclusions are applied through a generated config
+  (`gitleaks-archonix.toml` in the check's artifacts). The config extends the
+  repository's `.gitleaks.toml` if present (keeping its rules) and gitleaks' defaults
+  otherwise, and adds the exclusions as a path allowlist.
 - **gitleaks**: the matched secret text is never copied into the report; only rule,
   location and entropy.
 - **semgrep**: `ERROR`→high, `WARNING`→medium, `INFO`→low; `metadata.confidence` →

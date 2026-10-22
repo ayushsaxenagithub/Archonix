@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -31,12 +32,39 @@ def _dump(data: Any) -> str:
     return json.dumps(data, indent=2, sort_keys=False, ensure_ascii=False) + "\n"
 
 
+def _no_repo_symlinks(target: Path, root: Path) -> None:
+    """Refuse an output path that passes through a symlink inside the scanned repository.
+
+    The repository is untrusted input: a committed symlink such as ``.archonix -> ../x``
+    would otherwise redirect reports and artifacts outside it. Symlinks outside the
+    repository (for example macOS ``/tmp`` or the user's own links) are not affected.
+    """
+    root_real = Path(os.path.realpath(root))
+    current = Path(os.path.abspath(target))
+    for candidate in (current, *current.parents):
+        if not candidate.is_symlink():
+            continue
+        location = Path(os.path.realpath(candidate.parent)) / candidate.name
+        if location.is_relative_to(root_real):
+            raise PolicyError(
+                f"refusing to write through {candidate}: it is a symlink inside the scanned "
+                "repository (repository content is untrusted); choose a directory outside the "
+                "repository, for example a fresh temporary directory"
+            )
+
+
 def _emit(
-    text: str, out: Path | None, settings: Settings | None = None, overwrite: bool = False
+    text: str,
+    out: Path | None,
+    settings: Settings | None = None,
+    overwrite: bool = False,
+    root: Path | None = None,
 ) -> None:
     if out is None:
         sys.stdout.write(text)
         return
+    if root is not None:
+        _no_repo_symlinks(out, root)
     if settings is not None and not settings.permissions.artifact_writes:
         raise PolicyError("artifact writes are disabled by configuration")
     path = WriteGuard([out.parent], overwrite=overwrite).write_text(out, text)
@@ -98,6 +126,7 @@ def cmd_inventory(args: argparse.Namespace) -> int:
         Path(args.out) if args.out else None,
         settings,
         args.overwrite,
+        root,
     )
     return EXIT_OK
 
@@ -287,6 +316,8 @@ def cmd_check_run(args: argparse.Namespace) -> int:
 
     root = _root(args.path)
     settings = _settings(args, root)
+    if args.out_dir:
+        _no_repo_symlinks(Path(args.out_dir), root)
     out_dir = Path(args.out_dir).resolve() if args.out_dir else None
     if out_dir is not None:
         if not settings.permissions.artifact_writes:
@@ -422,7 +453,7 @@ def cmd_architecture(args: argparse.Namespace) -> int:
         if args.format == "mermaid"
         else render_diagram_markdown(title, mermaid, evidence, limitations)
     )
-    _emit(text, Path(args.out) if args.out else None, overwrite=args.overwrite)
+    _emit(text, Path(args.out) if args.out else None, overwrite=args.overwrite, root=root)
     return EXIT_OK
 
 

@@ -284,3 +284,26 @@ def test_real_bandit_partial_scan_is_not_ready(tmp_path: Path) -> None:
         ]
     )
     assert code == 4  # incomplete, not ready
+
+
+@needs("gitleaks")
+def test_real_gitleaks_honours_exclusions_and_repo_rules(tmp_path: Path) -> None:
+    import random
+    import string
+
+    rng = random.Random(11)  # synthetic token, never a real credential
+    token = "ghp_" + "".join(rng.choice(string.ascii_letters + string.digits) for _ in range(36))
+    repo = tmp_path / "repo"
+    (repo / "src").mkdir(parents=True)
+    (repo / "__pycache__").mkdir()
+    (repo / "src" / "settings.py").write_text(f'TOKEN = "{token}"\n')
+    (repo / "__pycache__" / "cached.pyc").write_text(f'TOKEN = "{token}"\n')  # excluded by default
+    (repo / ".gitleaks.toml").write_text(
+        '[extend]\nuseDefault = true\n\n[[rules]]\nid = "custom-acme"\n'
+        "regex = '''ACME_[0-9]{8}'''\n"
+    )
+    acme = "ACME_" + "12345678"  # matches the repository's custom rule; assembled at runtime
+    (repo / "src" / "acme.py").write_text(f'CODE = "{acme}"\n')
+    report = run_report(repo, tmp_path / "out", "gitleaks")
+    found = sorted((f["location"]["path"], f["source"]["rule_id"]) for f in report["findings"])
+    assert found == [("src/acme.py", "custom-acme"), ("src/settings.py", "github-pat")]

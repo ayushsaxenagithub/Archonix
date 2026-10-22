@@ -7,7 +7,18 @@ behaviour; patch versions are fixes).
 
 ## [Unreleased]
 
+### Security
+
+- An output path (`check run --out-dir`, `inventory --out`, `architecture diagram
+  --out`) that passes through a symlink inside the scanned repository is refused.
+  Previously a committed `.archonix -> ../somewhere` link redirected reports and
+  artifacts outside the repository.
+
 ### Fixed
+
+- The gitleaks check applies Archonix exclusions (e.g. `__pycache__`) through a generated
+  config that extends the repository's `.gitleaks.toml`. Previously gitleaks scanned
+  generated files that every other check skipped.
 
 - Incomplete scans can no longer satisfy readiness. Execution records gain an optional
   `coverage` field (`complete`, `detail`). bandit and semgrep set `complete: false` when
