@@ -17,6 +17,7 @@ only what is in scope, and report exactly what was verified.
 | plan or implement a feature | Implementation | [references/implementation.md](references/implementation.md) |
 | fix a bug | Bug investigation | [references/bug-investigation.md](references/bug-investigation.md) |
 | review a diff or PR | Change review | [references/change-review.md](references/change-review.md) |
+| check, audit or review the whole codebase | Codebase audit | [references/codebase-audit.md](references/codebase-audit.md) |
 | assess or improve tests | Testing | [references/testing.md](references/testing.md) |
 | audit security | Security | [references/security.md](references/security.md) |
 | find unused code or dependencies | Dead code | [references/dead-code.md](references/dead-code.md) |
@@ -78,8 +79,11 @@ Add `--allow-repo-code` (tests) or `--allow-network` (registry-backed scanners) 
 the user has authorized it. To verify a code change, run the tests: through the CLI as
 above, or with the project's own test command. If no permitted way to run them exists,
 report the tests as **not run** and give the exact command. Reports go to
-`.archonix/<run>/` only when repository changes are allowed; otherwise to a fresh
-temporary directory (see "Where reports and artifacts go" in the execution policy). Without the CLI, follow the same workflows manually and use
+`.archonix/<run>/` only in a trusted repository where changes are allowed; otherwise
+(untrusted code, or no changes wanted) to a fresh temporary directory outside the
+repository (see "Where reports and artifacts go" in the execution policy).
+
+Without the CLI, follow the same workflows manually and use
 the JSON schemas in `schemas/` and the templates in `templates/` next to this file.
 
 ## 5. Shared artifacts across workflows

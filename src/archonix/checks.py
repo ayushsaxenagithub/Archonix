@@ -290,6 +290,7 @@ def execute_plan(
                 tool_version=version,
             )
             cfg = settings.check(plan.adapter.id)
+            plan.adapter.prepare(ctx)
             result = run(
                 plan.adapter.argv(ctx),
                 root,

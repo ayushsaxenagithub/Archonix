@@ -38,6 +38,26 @@ archonix check run . --mode audit --allow-repo-code --checks pytest
 
 Report: reproduction, root cause, fix, the test that now passes, and anything not verified.
 
+## Whole-codebase audit
+
+For "check / audit / review the whole codebase", the skill loads
+`references/codebase-audit.md`. The method:
+
+1. Turn the project's own documented promises into checks.
+2. Split the code by risk: trust boundaries, write paths, verdict logic, process
+   handling.
+3. Review each area against those promises.
+4. Confirm every finding with a local reproduction on a throwaway copy before reporting
+   it.
+
+Scanner output is triaged (production code separated from tests and examples), and
+failing tests are triaged before they are called bugs.
+
+```bash
+out="$(mktemp -d)"   # reports outside the repository being audited
+archonix check run . --mode audit --exclude examples --out-dir "$out"
+```
+
 ## Security audit
 
 ```bash

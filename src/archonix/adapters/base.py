@@ -58,6 +58,13 @@ class Adapter:
     def applies(self, inventory: dict[str, Any], root: Path) -> tuple[bool, str]:
         raise NotImplementedError
 
+    def prepare(self, ctx: Context) -> None:
+        """Write any files the tool needs into ``ctx.artifact_dir`` just before it runs.
+
+        Planning calls ``argv`` with a placeholder artifact directory and must have no side
+        effects, so file preparation lives here instead.
+        """
+
     def argv(self, ctx: Context) -> list[str]:
         raise NotImplementedError
 

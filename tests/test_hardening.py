@@ -359,3 +359,111 @@ def test_adapter_exception_still_finalizes_artifacts(
     assert ex["outcome"] == "parse-error" and "parser crashed" in ex["outcome_detail"]
     assert findings == [] and ex["artifacts"]
     assert secret not in (out / "artifacts" / "pytest" / "pytest-junit.xml").read_text()
+
+
+# --- Feedback review: a committed .archonix symlink redirected reports outside the repo -
+
+
+@posix_only
+@pytest.mark.parametrize(
+    "command",
+    [
+        [
+            "check",
+            "run",
+            "{repo}",
+            "--mode",
+            "audit",
+            "--checks",
+            "gitleaks",
+            "--out-dir",
+            "{repo}/.archonix/run-1",
+        ],
+        ["inventory", "{repo}", "--out", "{repo}/.archonix/inventory.md"],
+        ["architecture", "diagram", "{repo}", "--out", "{repo}/.archonix/arch.md"],
+    ],
+)
+def test_output_through_repo_symlink_is_refused(
+    make_repo: Callable[..., Path],
+    tmp_path: Path,
+    command: list[str],
+) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    repo = make_repo(PY_REPO)
+    (repo / ".archonix").symlink_to(outside, target_is_directory=True)
+    argv = [part.replace("{repo}", str(repo)) for part in command]
+    assert main(argv) == 3
+    assert list(outside.rglob("*")) == []
+
+
+@posix_only
+def test_symlinks_outside_the_repo_and_real_dirs_are_allowed(
+    make_repo: Callable[..., Path],
+    tmp_path: Path,
+    fake_bin: Callable[..., Path],
+) -> None:
+    fake_bin("ruff", stdout="[]")
+    repo = make_repo(PY_REPO)
+    real = tmp_path / "reports-real"
+    real.mkdir()
+    (tmp_path / "reports-link").symlink_to(real, target_is_directory=True)
+    args = ["check", "run", str(repo), "--mode", "audit", "--checks", "ruff"]
+    assert main([*args, "--out-dir", str(tmp_path / "reports-link" / "run")]) == 0
+    assert (real / "run" / "report.json").is_file()
+    assert main([*args, "--out-dir", str(repo / ".archonix" / "run")]) == 0  # real directory
+    assert (repo / ".archonix" / "run" / "report.json").is_file()
+
+
+# --- Feedback review: gitleaks ignored Archonix exclusions -----------------------------
+
+
+def _gitleaks_ctx(root: Path, artifacts: Path) -> object:
+    from archonix.adapters import Context
+
+    return Context(root=root, artifact_dir=artifacts, excludes=["__pycache__", "*.egg-info"])
+
+
+def test_gitleaks_config_applies_exclusions_and_defaults(tmp_path: Path) -> None:
+    from archonix.adapters import ADAPTERS
+
+    gl = ADAPTERS["gitleaks"]
+    ctx = _gitleaks_ctx(tmp_path, tmp_path / "art")
+    gl.prepare(ctx)  # type: ignore[arg-type]
+    config = (tmp_path / "art" / "gitleaks-archonix.toml").read_text()
+    data = tomllib.loads(config)
+    assert data["extend"] == {"useDefault": True}
+    assert data["allowlist"]["paths"] == [
+        r"(^|/)(?s:__pycache__)(/|$)",
+        r"(^|/)(?s:.*\.egg\-info)(/|$)",
+    ]
+    argv = gl.argv(ctx)  # type: ignore[arg-type]
+    assert argv[argv.index("--config") + 1] == str(tmp_path / "art" / "gitleaks-archonix.toml")
+
+
+def test_gitleaks_config_extends_repo_config_but_not_through_symlink(tmp_path: Path) -> None:
+    from archonix.adapters import ADAPTERS
+
+    gl = ADAPTERS["gitleaks"]
+    (tmp_path / ".gitleaks.toml").write_text("[extend]\nuseDefault = true\n")
+    gl.prepare(_gitleaks_ctx(tmp_path, tmp_path / "a"))  # type: ignore[arg-type]
+    data = tomllib.loads((tmp_path / "a" / "gitleaks-archonix.toml").read_text())
+    assert data["extend"] == {"path": str(tmp_path / ".gitleaks.toml")}
+    if os.name == "posix":
+        (tmp_path / ".gitleaks.toml").unlink()
+        (tmp_path / ".gitleaks.toml").symlink_to(tmp_path / "elsewhere.toml")
+        gl.prepare(_gitleaks_ctx(tmp_path, tmp_path / "b"))  # type: ignore[arg-type]
+        data = tomllib.loads((tmp_path / "b" / "gitleaks-archonix.toml").read_text())
+        assert data["extend"] == {"useDefault": True}
+
+
+def test_planning_gitleaks_writes_nothing(
+    make_repo: Callable[..., Path], fake_bin: Callable[..., Path]
+) -> None:
+    fake_bin("gitleaks")
+    root = make_repo(PY_REPO)
+    before = sorted(root.rglob("*"))
+    settings = load_settings(root, mode="audit")
+    plan_checks(root, build_inventory(root, settings), settings, ["gitleaks"])
+    assert sorted(root.rglob("*")) == before
+    assert not Path("<artifact-dir>").exists()
