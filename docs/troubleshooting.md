@@ -21,6 +21,11 @@ tests collected). The report records stderr (redacted, bounded).
 **Revision is `none` / dirty is `unknown`.** The directory is not a Git repository, or
 `git status` was not permitted (add `--allow-tools`) or failed.
 
+**`refusing to write through … it is a symlink inside the scanned repository`.** The
+output path goes through a symlink that the repository itself contains, so the
+repository could redirect writes elsewhere. Use a directory outside the repository,
+for example `out="$(mktemp -d)"`.
+
 **`refusing to write … outside the allowed locations` / `not empty`.** Choose a new
 `--out-dir`, or pass `--overwrite` deliberately.
 

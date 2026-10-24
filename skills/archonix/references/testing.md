@@ -33,6 +33,27 @@ IDs. The matrix then links results to criteria with no ledger edits. Pending stu
 count as *unknown*, never as passed. Details: `docs/test-plan.md` in the Archonix
 repository.
 
+## Triage a failing test before calling it a bug
+
+A red test is evidence, not yet a diagnosis. Before reporting a failure as a product
+defect:
+
+1. **Rerun it on its own** (for example `pytest path::test_name`, or a single Jest/Vitest
+   test). A test that passes alone but fails in the full run points to ordering or
+   shared state.
+2. **Rerun it unchanged once or twice.** Intermittent results point to timing, load or
+   randomness. Report the failure with the counts, for example "failed 1 of 7 runs".
+3. **Check the environment:** missing or different tool versions, OS, timezone, locale,
+   network, file permissions, caches left by earlier runs (`__pycache__`,
+   `.pytest_cache`), and environment variables.
+4. **Classify** the failure and say which:
+   - **product**: the code under test is wrong; reproduce it outside the test if you can;
+   - **test**: the test itself is wrong, brittle or timing-dependent;
+   - **environment**: the setup differs from what the project expects.
+
+   Fix or report it accordingly, and never weaken an assertion to make a product defect
+   disappear.
+
 ## Traceability matrix
 
 Record evidence in the ledger (`verification.evidence[]`), using `check:<check_id>` to

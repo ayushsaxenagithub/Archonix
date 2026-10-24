@@ -40,6 +40,7 @@ Status labels:
 | API smoke measurement with percentile reliability | Tested | loopback server in tests |
 | k6 scenario generation | Tested + real k6 | Archonix does not run load tests |
 | Security manual review checklist | Manual workflow | |
+| Whole-codebase audit workflow (promises → checks, risk-ordered review, reproduce before reporting, scanner and test-failure triage) | Manual workflow | skill guidance only; no automation |
 | osv-scanner adapter (dependency vulnerabilities from lockfiles, multi-ecosystem) | Tested + real | real osv-scanner 2.7.0 locally and in the scheduled `Dependency audit` workflow (network); recorded fixtures in every CI run |
 | Trivy, pip-audit, deptry, Knip, ESLint, tsc, mypy, ZAP adapters | Planned | manual workflow documented; pip-audit is lower priority because osv-scanner reads Python lockfiles without installing them |
 | Dead-code cleanup proposals | Manual workflow | never automatic |

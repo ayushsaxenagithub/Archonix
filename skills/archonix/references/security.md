@@ -1,7 +1,11 @@
 # Security analysis
 
-Combine maintained scanners with manual review. Never execute exploit payloads to raise
-confidence, and only test running systems you are authorized to test.
+Combine maintained scanners with manual review. Confirm suspected defects with a local
+reproduction against the code under review: a throwaway copy, synthetic data, a
+temporary directory, and authorization to run the project's code. Never run exploit
+payloads against live, shared or production systems or anyone else's services. Only
+test running systems you are authorized to test. For a whole-codebase review, follow
+`codebase-audit.md`.
 
 ## 1. Automated checks (when permitted)
 
@@ -36,8 +40,9 @@ disclosure · race conditions and unsafe state transitions.
 Use `schemas/finding.schema.json`. Keep three kinds distinct:
 
 - `scanner-reported` — tool output, not yet reviewed
-- `verified` — you confirmed it by reading the code path (explain the exploit path or
-  impact without running an exploit)
+- `verified` — you confirmed it with a local reproduction (record the steps and the
+  observed result), or, where reproduction is not possible or not authorized, by
+  tracing the exact code path (say which, and why no reproduction was run)
 - `hypothesis` — plausible risk that needs confirmation
 
 Severity (impact) and confidence (how sure) are separate. Preserve the tool's original
